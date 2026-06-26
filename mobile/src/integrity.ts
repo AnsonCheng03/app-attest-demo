@@ -18,7 +18,11 @@ export function getNativePlatform(): PlatformName {
   return Platform.OS === 'ios' ? 'ios' : 'android';
 }
 
-export function formatIosProof(keyId: string, assertion: string, mode: 'mock' | 'real') {
+export function formatIosProof(
+  keyId: string,
+  assertion: string,
+  mode: 'mock' | 'real'
+) {
   const prefix = mode === 'mock' ? 'mock-ios-assertion' : 'ios-app-attest';
   return `${prefix}:${keyId}:${assertion}`;
 }
@@ -37,8 +41,12 @@ export async function createAndroidProof(
 
   const mod = moduleRecord();
   const getToken =
-    (mod.requestPlayIntegrityTokenAsync as undefined | ((options: { requestHash: string }) => Promise<string>)) ??
-    (mod.getPlayIntegrityTokenAsync as undefined | ((requestHash: string) => Promise<string>));
+    (mod.requestPlayIntegrityTokenAsync as
+      | undefined
+      | ((options: { requestHash: string }) => Promise<string>)) ??
+    (mod.getPlayIntegrityTokenAsync as
+      | undefined
+      | ((requestHash: string) => Promise<string>));
 
   if (!getToken) {
     throw new Error('Play Integrity API is unavailable in this Expo runtime.');
@@ -46,9 +54,13 @@ export async function createAndroidProof(
 
   let token: string;
   try {
-    token = await (getToken as (options: { requestHash: string }) => Promise<string>)({ requestHash });
+    token = await (getToken as (options: {
+      requestHash: string;
+    }) => Promise<string>)({ requestHash });
   } catch {
-    token = await (getToken as (requestHash: string) => Promise<string>)(requestHash);
+    token = await (getToken as (requestHash: string) => Promise<string>)(
+      requestHash
+    );
   }
 
   return token;
@@ -84,18 +96,28 @@ export async function createIosAttestationObject(
 
   const mod = moduleRecord();
   const attestor =
-    (mod.attestAppAttestKeyAsync as undefined | ((options: { keyId: string; challenge: string }) => Promise<string>)) ??
-    (mod.attestKeyAsync as undefined | ((keyId: string, challenge: string) => Promise<string>));
+    (mod.attestAppAttestKeyAsync as
+      | undefined
+      | ((options: { keyId: string; challenge: string }) => Promise<string>)) ??
+    (mod.attestKeyAsync as
+      | undefined
+      | ((keyId: string, challenge: string) => Promise<string>));
 
   if (!attestor) {
     throw new Error('App Attest attestation API is unavailable in this Expo runtime.');
   }
 
   if (attestor.length === 2) {
-    return (attestor as (first: string, second: string) => Promise<string>)(keyId, challenge);
+    return (attestor as (first: string, second: string) => Promise<string>)(
+      keyId,
+      challenge
+    );
   }
 
-  return (attestor as (options: { keyId: string; challenge: string }) => Promise<string>)({ keyId, challenge });
+  return (attestor as (options: {
+    keyId: string;
+    challenge: string;
+  }) => Promise<string>)({ keyId, challenge });
 }
 
 export async function createIosAssertion(
@@ -114,18 +136,31 @@ export async function createIosAssertion(
 
   const mod = moduleRecord();
   const asserter =
-    (mod.generateAssertionAsync as undefined | ((options: { keyId: string; clientDataHash: string }) => Promise<string>)) ??
-    (mod.assertAppAttestKeyAsync as undefined | ((keyId: string, clientDataHash: string) => Promise<string>));
+    (mod.generateAssertionAsync as
+      | undefined
+      | ((options: {
+          keyId: string;
+          clientDataHash: string;
+        }) => Promise<string>)) ??
+    (mod.assertAppAttestKeyAsync as
+      | undefined
+      | ((keyId: string, clientDataHash: string) => Promise<string>));
 
   if (!asserter) {
     throw new Error('App Attest assertion API is unavailable in this Expo runtime.');
   }
 
   if (asserter.length === 2) {
-    return (asserter as (first: string, second: string) => Promise<string>)(keyId, requestHash);
+    return (asserter as (first: string, second: string) => Promise<string>)(
+      keyId,
+      requestHash
+    );
   }
 
-  return (asserter as (options: { keyId: string; clientDataHash: string }) => Promise<string>)({
+  return (asserter as (options: {
+    keyId: string;
+    clientDataHash: string;
+  }) => Promise<string>)({
     keyId,
     clientDataHash: requestHash,
   });

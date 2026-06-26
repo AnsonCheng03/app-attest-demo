@@ -1,4 +1,4 @@
-package com.example.integritydemo
+package com.anson12666.integritydemomobile
 
 import android.app.Application
 import android.content.res.Configuration

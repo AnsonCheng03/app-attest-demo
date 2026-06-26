@@ -1,4 +1,4 @@
-package com.example.integritydemo
+package com.anson12666.integritydemomobile
 
 import android.os.Build
 import android.os.Bundle

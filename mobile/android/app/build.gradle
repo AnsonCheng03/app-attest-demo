@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.example.integritydemo'
+    namespace 'com.anson12666.integritydemomobile'
     defaultConfig {
-        applicationId 'com.example.integritydemo'
+        applicationId 'com.anson12666.integritydemomobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

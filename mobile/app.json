@@ -1,15 +1,32 @@
 {
   "expo": {
-    "name": "Integrity Demo",
-    "slug": "integrity-demo",
-    "scheme": "integritydemo",
+    "name": "Integrity Demo Mobile",
+    "slug": "integrity-demo-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
-      "bundleIdentifier": "com.example.integritydemo"
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anson12666.integritydemomobile"
     },
     "android": {
-      "package": "com.example.integritydemo"
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anson12666.integritydemomobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }
