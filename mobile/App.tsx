@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -26,22 +27,97 @@ import {
   formatIosProof,
   getIntegrityMode,
   getNativePlatform,
+  isIntegrityModuleAvailable,
 } from './src/integrity';
 
 type ActionName = 'login' | 'collectVoucher' | 'useWalletCode';
 
+const inputStorageKey = 'integrity-demo-mobile-inputs';
+
 export default function App() {
+  const defaultApiBaseUrl =
+    process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+  const requireNativeRuntime =
+    process.env.EXPO_PUBLIC_REQUIRE_NATIVE_RUNTIME === 'true';
   const [username, setUsername] = useState('demo');
   const [password, setPassword] = useState('password123');
   const [voucherId, setVoucherId] = useState('voucher-001');
+  const [apiBaseUrlInput, setApiBaseUrlInput] = useState(defaultApiBaseUrl);
   const [token, setToken] = useState('');
   const [challengeSummary, setChallengeSummary] = useState('');
   const [log, setLog] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const hasLoadedSavedInputs = useRef(false);
 
-  const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+  const apiBaseUrl = apiBaseUrlInput.trim() || defaultApiBaseUrl;
   const integrityMode = getIntegrityMode();
   const nativePlatform = getNativePlatform();
+  const integrityModuleAvailable = isIntegrityModuleAvailable();
+  const nativeRuntimeRequiredButMissing =
+    requireNativeRuntime && !integrityModuleAvailable;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSavedInputs() {
+      try {
+        const raw = await AsyncStorage.getItem(inputStorageKey);
+        if (!raw || cancelled) {
+          return;
+        }
+
+        const saved = JSON.parse(raw) as Partial<{
+          username: string;
+          password: string;
+          voucherId: string;
+          apiBaseUrlInput: string;
+        }>;
+
+        if (typeof saved.username === 'string') {
+          setUsername(saved.username);
+        }
+        if (typeof saved.password === 'string') {
+          setPassword(saved.password);
+        }
+        if (typeof saved.voucherId === 'string') {
+          setVoucherId(saved.voucherId);
+        }
+        if (typeof saved.apiBaseUrlInput === 'string') {
+          setApiBaseUrlInput(saved.apiBaseUrlInput);
+        }
+      } catch (error) {
+        console.warn('Failed to load saved mobile inputs', error);
+      } finally {
+        if (!cancelled) {
+          hasLoadedSavedInputs.current = true;
+        }
+      }
+    }
+
+    loadSavedInputs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedSavedInputs.current) {
+      return;
+    }
+
+    AsyncStorage.setItem(
+      inputStorageKey,
+      JSON.stringify({
+        username,
+        password,
+        voucherId,
+        apiBaseUrlInput,
+      })
+    ).catch((error) => {
+      console.warn('Failed to save mobile inputs', error);
+    });
+  }, [apiBaseUrlInput, password, username, voucherId]);
 
   const pushLog = (line: string) => setLog((current) => [line, ...current].slice(0, 20));
 
@@ -197,6 +273,28 @@ export default function App() {
       pushLog(`Profile ${response.username} (${response.tier})`);
     });
 
+  if (nativeRuntimeRequiredButMissing) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="dark" />
+        <View style={styles.blockedScreen}>
+          <View style={[styles.statusCard, styles.statusFallback]}>
+            <Text style={styles.title}>Native Build Required</Text>
+            <Text style={styles.statusText}>
+              This app is configured to reject Expo Go. Install and open a
+              native build created with `npm run ios` or `npm run android`.
+            </Text>
+            <Text style={styles.helperText}>
+              Current runtime: Expo Go or another runtime without
+              `ExpoAppIntegrity`
+            </Text>
+            <Text style={styles.helperText}>Target server: {apiBaseUrl}</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -212,7 +310,48 @@ export default function App() {
             {apiBaseUrl}
           </Text>
           <Text style={styles.meta}>
+            Integrity module: {integrityModuleAvailable ? 'native loaded' : 'mock only'}
+          </Text>
+          <Text style={styles.meta}>
+            Native-build-only: {requireNativeRuntime ? 'enabled' : 'disabled'}
+          </Text>
+          <Text style={styles.meta}>
             Last challenge: {challengeSummary || 'none yet'}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.statusCard,
+            integrityModuleAvailable ? styles.statusReady : styles.statusFallback,
+          ]}
+        >
+          <Text style={styles.statusTitle}>
+            {integrityModuleAvailable
+              ? 'Native integrity module detected'
+              : 'Expo Go fallback active'}
+          </Text>
+          <Text style={styles.statusText}>
+            {integrityModuleAvailable
+              ? 'Real native integrity APIs are available in this runtime.'
+              : integrityMode === 'mock'
+                ? 'This runtime does not include ExpoAppIntegrity, so the app will keep working in mock mode.'
+                : 'Real mode needs a rebuilt native app from npm run ios or npm run android.'}
+          </Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Server</Text>
+          <TextInput
+            value={apiBaseUrlInput}
+            onChangeText={setApiBaseUrlInput}
+            style={styles.input}
+            placeholder="http://192.168.1.10:8080"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Text style={styles.helperText}>
+            Active server: {apiBaseUrl}
           </Text>
         </View>
 
@@ -300,6 +439,11 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
+  blockedScreen: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+  },
   hero: {
     backgroundColor: '#103c2f',
     borderRadius: 24,
@@ -327,6 +471,35 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#e5d6c4',
+  },
+  statusCard: {
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+  },
+  statusReady: {
+    backgroundColor: '#edfdf5',
+    borderColor: '#86efac',
+  },
+  statusFallback: {
+    backgroundColor: '#fff7ed',
+    borderColor: '#fdba74',
+  },
+  statusTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#103c2f',
+    marginBottom: 6,
+  },
+  statusText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#4b5563',
+  },
+  helperText: {
+    color: '#6b7280',
+    fontSize: 13,
+    marginTop: 2,
   },
   sectionTitle: {
     fontSize: 18,
