@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+app:
+  integrity:
+    mode: mock
+    android:
+      packageName: com.example.integritydemo
+      certificateDigest: CHANGE_ME
+    ios:
+      bundleId: com.example.integritydemo
+      teamId: CHANGE_ME

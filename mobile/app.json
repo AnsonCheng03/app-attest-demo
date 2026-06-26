@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Integrity Demo",
+    "slug": "integrity-demo",
+    "scheme": "integritydemo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "ios": {
+      "bundleIdentifier": "com.example.integritydemo"
+    },
+    "android": {
+      "package": "com.example.integritydemo"
+    }
+  }
+}
