@@ -49,6 +49,7 @@ public class AppIntegrityProperties {
     public static class Ios {
         private String bundleId;
         private String teamId;
+        private String appAttestEnvironment = "development";
 
         public String getBundleId() {
             return bundleId;
@@ -64,6 +65,14 @@ public class AppIntegrityProperties {
 
         public void setTeamId(String teamId) {
             this.teamId = teamId;
+        }
+
+        public String getAppAttestEnvironment() {
+            return appAttestEnvironment;
+        }
+
+        public void setAppAttestEnvironment(String appAttestEnvironment) {
+            this.appAttestEnvironment = appAttestEnvironment;
         }
     }
 }

@@ -13,10 +13,11 @@ management:
 
 app:
   integrity:
-    mode: mock
+    mode: real
     android:
       packageName: com.example.integritydemo
       certificateDigest: CHANGE_ME
     ios:
-      bundleId: com.example.integritydemo
-      teamId: CHANGE_ME
+      bundleId: com.anson12666.integritydemomobile
+      teamId: 538FVU496F
+      appAttestEnvironment: development
