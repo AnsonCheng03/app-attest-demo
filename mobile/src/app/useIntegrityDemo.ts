@@ -154,7 +154,7 @@ export function useIntegrityDemo() {
       report('requesting registration challenge');
       const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
       report('ensuring App Attest key exists');
-      const keyId = await ensureIosKeyId();
+      const keyId = await ensureIosKeyId(integrityMode);
       report(`building attestation object for key ${keyId}`);
       const attestationObject = await createIosAttestationObject(
         challenge.challenge,
@@ -208,7 +208,7 @@ export function useIntegrityDemo() {
       report('requesting login challenge');
       const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
       report('ensuring App Attest key exists');
-      const keyId = await ensureIosKeyId();
+      const keyId = await ensureIosKeyId(integrityMode);
       report('hashing login payload');
       const bodyHashForLogin = await sha256Base64(
         `username=${username}\npassword=${password}`
@@ -258,7 +258,7 @@ export function useIntegrityDemo() {
 
       if (actionPlatform === 'ios') {
         report('ensuring App Attest key exists');
-        const keyId = await ensureIosKeyId();
+        const keyId = await ensureIosKeyId(integrityMode);
         report(`generating App Attest assertion for key ${keyId}`);
         const assertion = await createIosAssertion(
           'POST',

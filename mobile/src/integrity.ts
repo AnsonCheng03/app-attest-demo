@@ -65,6 +65,10 @@ export function getNativePlatform(): PlatformName {
   return Platform.OS === "ios" ? "ios" : "android";
 }
 
+function mockIosKeyId() {
+  return "mock-ios-key";
+}
+
 export function formatIosProof(
   keyId: string,
   assertion: string,
@@ -127,10 +131,19 @@ export async function createAndroidProof(
   return token;
 }
 
-export async function ensureIosKeyId() {
+export async function ensureIosKeyId(mode: "mock" | "real" = getIntegrityMode()) {
   console.log("[integrity] ensureIosKeyId:start", {
     cached: cachedIosKeyId,
+    mode,
   });
+  if (mode === "mock") {
+    cachedIosKeyId = mockIosKeyId();
+    console.log("[integrity] ensureIosKeyId:mock-mode-using-fixed-key", {
+      keyId: cachedIosKeyId,
+    });
+    return cachedIosKeyId;
+  }
+
   if (cachedIosKeyId) {
     console.log("[integrity] ensureIosKeyId:return-cached", {
       keyId: cachedIosKeyId,
@@ -142,7 +155,7 @@ export async function ensureIosKeyId() {
   try {
     mod = moduleRecord();
   } catch {
-    cachedIosKeyId = "mock-ios-key";
+    cachedIosKeyId = mockIosKeyId();
     console.log("[integrity] ensureIosKeyId:module-missing-using-mock-key");
     return cachedIosKeyId;
   }
@@ -152,7 +165,7 @@ export async function ensureIosKeyId() {
     (mod.generateKeyAsync as undefined | (() => Promise<string>));
 
   if (!generator) {
-    cachedIosKeyId = "mock-ios-key";
+    cachedIosKeyId = mockIosKeyId();
     console.log("[integrity] ensureIosKeyId:no-generator-using-mock-key");
     return cachedIosKeyId;
   }

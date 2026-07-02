@@ -59,7 +59,7 @@ export function AppScreen({
           username={username}
           voucherId={voucherId}
         />
-        <ActionList actions={actions} />
+        <ActionList actions={actions} nativePlatform={nativePlatform} />
         <ActivityLogCard
           loading={loading}
           log={log}
