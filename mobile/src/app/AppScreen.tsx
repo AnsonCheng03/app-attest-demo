@@ -17,7 +17,7 @@ export function AppScreen({
   integrityMode,
   integrityModuleAvailable,
   loading,
-  log,
+  logGroups,
   nativePlatform,
   password,
   requestStatus,
@@ -62,7 +62,7 @@ export function AppScreen({
         <ActionList actions={actions} nativePlatform={nativePlatform} />
         <ActivityLogCard
           loading={loading}
-          log={log}
+          logGroups={logGroups}
           requestStatus={requestStatus}
         />
       </ScrollView>

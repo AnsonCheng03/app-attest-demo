@@ -20,6 +20,7 @@ import {
   isIntegrityModuleAvailable,
 } from '../integrity';
 import type { IntegrityAction } from '../types';
+import type { LogEntry, LogGroup } from './types';
 
 const inputStorageKey = 'integrity-demo-mobile-inputs';
 
@@ -34,7 +35,7 @@ export function useIntegrityDemo() {
   const [apiBaseUrlInput, setApiBaseUrlInput] = useState(defaultApiBaseUrl);
   const [token, setToken] = useState('');
   const [challengeSummary, setChallengeSummary] = useState('');
-  const [log, setLog] = useState<string[]>([]);
+  const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
   const [loading, setLoading] = useState(false);
   const [requestStatus, setRequestStatus] = useState('');
   const hasLoadedSavedInputs = useRef(false);
@@ -109,78 +110,170 @@ export function useIntegrityDemo() {
     });
   }, [apiBaseUrlInput, password, username, voucherId]);
 
-  const pushLog = (line: string) =>
-    setLog((current) => [line, ...current].slice(0, 20));
+  const appendLogEntry = (groupId: string, entry: Omit<LogEntry, 'id'>) => {
+    setLogGroups((current) =>
+      current.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              entries: [
+                ...group.entries,
+                { ...entry, id: `${groupId}-${group.entries.length + 1}` },
+              ],
+            }
+          : group
+      )
+    );
+  };
 
-  const updateRequestStatus = (line: string) => {
-    setRequestStatus(line);
-    pushLog(line);
+  const startLogGroup = (title: string, flowTitle: string) => {
+    const groupId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const nextGroup: LogGroup = {
+      id: groupId,
+      title,
+      flowTitle,
+      status: 'running',
+      entries: [],
+    };
+    setLogGroups((current) =>
+      [nextGroup, ...current].slice(0, 12)
+    );
+    return groupId;
+  };
+
+  const setLogGroupStatus = (
+    groupId: string,
+    status: LogGroup['status']
+  ) => {
+    setLogGroups((current) =>
+      current.map((group) =>
+        group.id === groupId ? { ...group, status } : group
+      )
+    );
+  };
+
+  const updateRequestStatus = (title: string, detail?: string) => {
+    setRequestStatus(detail ? `${title}: ${detail}` : title);
   };
 
   const withLoading = async (
     label: string,
-    task: (report: (line: string) => void) => Promise<void>
+    flowTitle: string,
+    task: (
+      report: (
+        title: string,
+        detail?: string,
+        tone?: LogEntry['tone']
+      ) => void
+    ) => Promise<void>
   ) => {
+    const groupId = startLogGroup(label, flowTitle);
     setLoading(true);
-    setRequestStatus(`${label}: starting`);
+    updateRequestStatus(label, 'starting');
     try {
-      await task((line) => updateRequestStatus(`${label}: ${line}`));
-      setRequestStatus(`${label}: done`);
+      await task((title, detail, tone = 'info') => {
+        updateRequestStatus(title, detail);
+        appendLogEntry(groupId, { title, detail, tone });
+      });
+      appendLogEntry(groupId, {
+        title: 'Completed',
+        detail: `${label} finished successfully.`,
+        tone: 'success',
+      });
+      setLogGroupStatus(groupId, 'success');
+      updateRequestStatus(label, 'done');
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      setRequestStatus(`${label}: failed`);
-      pushLog(`ERROR: ${label}: ${message}`);
+      appendLogEntry(groupId, {
+        title: 'Request failed',
+        detail: message,
+        tone: 'error',
+      });
+      setLogGroupStatus(groupId, 'error');
+      updateRequestStatus(label, 'failed');
     } finally {
       setLoading(false);
     }
   };
 
   const onGetChallenge = (action: IntegrityAction) =>
-    withLoading(`Get ${action} challenge`, async (report) => {
-      report(`requesting challenge for ${nativePlatform}`);
+    withLoading(`Get ${action} challenge`, 'Challenge Request', async (report) => {
+      report(
+        '1. Ask backend for a one-time challenge',
+        `Platform: ${nativePlatform}, action: ${action}`
+      );
       const response = await createChallenge(apiBaseUrl, nativePlatform, action);
       setChallengeSummary(`${action}: ${response.challengeId}`);
-      report(`received challenge ${response.challengeId}`);
-      pushLog(`Challenge for ${action}: ${response.challengeId}`);
+      report(
+        '2. Backend returned challenge details',
+        `Challenge ID: ${response.challengeId}`
+      );
     });
 
   const onRegisterIosKey = () =>
-    withLoading('Register iOS App Attest key', async (report) => {
-      if (nativePlatform !== 'ios') {
-        pushLog('iOS registration is only available when the app runs as iOS.');
-        return;
-      }
+    withLoading(
+      'Register iOS App Attest key',
+      'App Attest Registration',
+      async (report) => {
+        if (nativePlatform !== 'ios') {
+          throw new Error('This registration flow requires an iOS runtime.');
+        }
 
-      report('requesting registration challenge');
-      const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
-      report('ensuring App Attest key exists');
-      const keyId = await ensureIosKeyId(integrityMode);
-      report(`building attestation object for key ${keyId}`);
-      const attestationObject = await createIosAttestationObject(
-        challenge.challenge,
-        keyId,
-        integrityMode
-      );
-      report('sending attestation to server');
-      const response = await registerIosKey(apiBaseUrl, {
-        challengeId: challenge.challengeId,
-        challenge: challenge.challenge,
-        keyId,
-        attestationObject,
-      });
-      report(`server registered key ${response.keyId}`);
-      pushLog(`Registered iOS key ${response.keyId}`);
-    });
+        report(
+          '1. Ask backend for a one-time registration challenge',
+          'Backend creates a fresh iOS registration nonce.'
+        );
+        const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
+        report(
+          '2. Load or create the App Attest key',
+          'The device returns the keyId without exposing the private key.'
+        );
+        const keyId = await ensureIosKeyId(integrityMode);
+        report(
+          '3. Build the App Attest attestation object',
+          `Creating attestation for key ${keyId}.`
+        );
+        const attestationObject = await createIosAttestationObject(
+          challenge.challenge,
+          keyId,
+          integrityMode
+        );
+        report(
+          '4. Send keyId + attestation object to backend',
+          'Backend will verify the attestation and store the device key.'
+        );
+        const response = await registerIosKey(apiBaseUrl, {
+          challengeId: challenge.challengeId,
+          challenge: challenge.challenge,
+          keyId,
+          attestationObject,
+        });
+        report(
+          '5. Backend registered the App Attest key',
+          `Registered keyId: ${response.keyId}`,
+          'success'
+        );
+      }
+    );
 
   const onAndroidLogin = () =>
-    withLoading('Android login', async (report) => {
-      report('requesting login challenge');
+    withLoading('Android login', 'Play Integrity Login', async (report) => {
+      report(
+        '1. Ask backend for a one-time login challenge',
+        'Backend issues a fresh challenge for this protected request.'
+      );
       const challenge = await createChallenge(apiBaseUrl, 'android', 'login');
-      report('hashing login payload');
+      report(
+        '2. Build request-bound hash inputs',
+        'Hashing the login body so the proof is tied to this request.'
+      );
       const bodyHashForLogin = await sha256Base64(
         `username=${username}\npassword=${password}`
       );
-      report('creating Play Integrity proof');
+      report(
+        '3. Request Play Integrity proof from the runtime',
+        'The app asks the platform layer for a request-bound proof.'
+      );
       const proof = await createAndroidProof(
         'POST',
         loginPath,
@@ -188,7 +281,10 @@ export function useIntegrityDemo() {
         challenge.challenge,
         integrityMode
       );
-      report('sending login request');
+      report(
+        '4. Send login request + integrity proof to backend',
+        'Backend can now verify the proof against the protected request.'
+      );
       const response = await login(apiBaseUrl, {
         username,
         password,
@@ -199,21 +295,36 @@ export function useIntegrityDemo() {
         },
       });
       setToken(response.accessToken);
-      report('login succeeded and token received');
-      pushLog(`Android login token: ${response.accessToken}`);
+      report(
+        '5. Backend accepted the login',
+        `Access token received: ${response.accessToken}`,
+        'success'
+      );
     });
 
   const onIosLogin = () =>
-    withLoading('iOS login', async (report) => {
-      report('requesting login challenge');
+    withLoading('iOS login', 'App Attest Assertion Login', async (report) => {
+      report(
+        '1. Ask backend for a fresh assertion challenge',
+        'Backend issues a one-time challenge for this protected login.'
+      );
       const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
-      report('ensuring App Attest key exists');
+      report(
+        '2. Load the registered App Attest key',
+        'Using the previously registered keyId for this device.'
+      );
       const keyId = await ensureIosKeyId(integrityMode);
-      report('hashing login payload');
+      report(
+        '3. Build request-bound client data hash',
+        'Hashing the login request body before generating an assertion.'
+      );
       const bodyHashForLogin = await sha256Base64(
         `username=${username}\npassword=${password}`
       );
-      report(`generating assertion for key ${keyId}`);
+      report(
+        '4. Generate the App Attest assertion',
+        `Signing the request hash with key ${keyId}.`
+      );
       const assertion = await createIosAssertion(
         'POST',
         loginPath,
@@ -222,7 +333,10 @@ export function useIntegrityDemo() {
         keyId,
         integrityMode
       );
-      report('sending login request');
+      report(
+        '5. Send login request + assertion to backend',
+        'Backend verifies the assertion using the stored public key.'
+      );
       const response = await login(apiBaseUrl, {
         username,
         password,
@@ -233,82 +347,126 @@ export function useIntegrityDemo() {
         },
       });
       setToken(response.accessToken);
-      report('login succeeded and token received');
-      pushLog(`iOS login token: ${response.accessToken}`);
+      report(
+        '6. Backend accepted the login',
+        `Access token received: ${response.accessToken}`,
+        'success'
+      );
     });
 
   const onCollectVoucher = () =>
-    withLoading('Collect voucher', async (report) => {
-      if (!token) {
-        pushLog('Login first to get a bearer token.');
-        return;
-      }
+    withLoading(
+      'Collect voucher',
+      nativePlatform === 'ios'
+        ? 'App Attest Protected Request'
+        : 'Play Integrity Protected Request',
+      async (report) => {
+        if (!token) {
+          throw new Error('Login first before collecting a voucher.');
+        }
 
-      const actionPlatform = nativePlatform === 'ios' ? 'ios' : 'android';
-      report(`requesting collectVoucher challenge for ${actionPlatform}`);
-      const challenge = await createChallenge(
-        apiBaseUrl,
-        actionPlatform,
-        'collectVoucher'
-      );
-      const path = collectVoucherPath(voucherId);
-      report(`preparing request for ${path}`);
-      const emptyBodyHash = await sha256Base64('');
-      let proof: string;
-
-      if (actionPlatform === 'ios') {
-        report('ensuring App Attest key exists');
-        const keyId = await ensureIosKeyId(integrityMode);
-        report(`generating App Attest assertion for key ${keyId}`);
-        const assertion = await createIosAssertion(
-          'POST',
-          path,
-          emptyBodyHash,
-          challenge.challenge,
-          keyId,
-          integrityMode
+        const actionPlatform = nativePlatform === 'ios' ? 'ios' : 'android';
+        report(
+          '1. Ask backend for a fresh protected-request challenge',
+          `Platform: ${actionPlatform}, action: collectVoucher`
         );
-        proof = formatIosProof(keyId, assertion, integrityMode);
-      } else {
-        report('creating Play Integrity proof');
-        proof = await createAndroidProof(
-          'POST',
-          path,
-          emptyBodyHash,
-          challenge.challenge,
-          integrityMode
+        const challenge = await createChallenge(
+          apiBaseUrl,
+          actionPlatform,
+          'collectVoucher'
+        );
+        const path = collectVoucherPath(voucherId);
+        report(
+          '2. Build request-bound hash inputs',
+          `Preparing proof inputs for ${path}.`
+        );
+        const emptyBodyHash = await sha256Base64('');
+        let proof: string;
+
+        if (actionPlatform === 'ios') {
+          report(
+            '3. Load the registered App Attest key',
+            'The device will use the stored private key for this assertion.'
+          );
+          const keyId = await ensureIosKeyId(integrityMode);
+          report(
+            '4. Generate App Attest assertion',
+            `Signing the request hash with key ${keyId}.`
+          );
+          const assertion = await createIosAssertion(
+            'POST',
+            path,
+            emptyBodyHash,
+            challenge.challenge,
+            keyId,
+            integrityMode
+          );
+          proof = formatIosProof(keyId, assertion, integrityMode);
+        } else {
+          report(
+            '3. Request Play Integrity proof from the runtime',
+            'The proof is bound to this collect-voucher request.'
+          );
+          proof = await createAndroidProof(
+            'POST',
+            path,
+            emptyBodyHash,
+            challenge.challenge,
+            integrityMode
+          );
+        }
+
+        report(
+          actionPlatform === 'ios'
+            ? '5. Send voucher request + assertion to backend'
+            : '4. Send voucher request + integrity proof to backend',
+          'Backend validates the proof before processing the voucher.'
+        );
+        const response = await collectVoucher(apiBaseUrl, token, voucherId, {
+          platform: actionPlatform,
+          challengeId: challenge.challengeId,
+          proof,
+        });
+        report(
+          actionPlatform === 'ios'
+            ? '6. Backend accepted the protected request'
+            : '5. Backend accepted the protected request',
+          `Voucher ${response.voucherId}: ${response.status}`,
+          'success'
         );
       }
-
-      report('sending collect voucher request');
-      const response = await collectVoucher(apiBaseUrl, token, voucherId, {
-        platform: actionPlatform,
-        challengeId: challenge.challengeId,
-        proof,
-      });
-      report(`server responded with status ${response.status}`);
-      pushLog(`Voucher ${response.voucherId}: ${response.status}`);
-    });
+    );
 
   const onGetProfile = () =>
-    withLoading('Get profile', async (report) => {
+    withLoading('Get profile', 'Authenticated Profile Read', async (report) => {
       if (!token) {
-        pushLog('Login first to get a bearer token.');
-        return;
+        throw new Error('Login first before requesting the profile.');
       }
 
-      report('sending profile request');
+      report(
+        '1. Send authenticated profile request',
+        'This endpoint uses the bearer token and does not require fresh integrity.'
+      );
       const response = await getProfile(apiBaseUrl, token);
-      report(`profile loaded for ${response.username}`);
-      pushLog(`Profile ${response.username} (${response.tier})`);
+      report(
+        '2. Backend returned the profile',
+        `Profile ${response.username} (${response.tier})`,
+        'success'
+      );
     });
 
   const onCheckHealth = () =>
-    withLoading('Check backend health', async (report) => {
-      report('sending health request');
+    withLoading('Check backend health', 'Backend Health Check', async (report) => {
+      report(
+        '1. Send backend health request',
+        'Checking whether the API is reachable.'
+      );
       const response = await checkHealth(apiBaseUrl);
-      report(`backend health is ${response.status}`);
-      pushLog(`Health: ${response.status}`);
+      report(
+        '2. Backend health response received',
+        `Health: ${response.status}`,
+        'success'
+      );
     });
 
   return {
@@ -327,7 +485,7 @@ export function useIntegrityDemo() {
     integrityMode,
     integrityModuleAvailable,
     loading,
-    log,
+    logGroups,
     nativePlatform,
     nativeRuntimeRequiredButMissing,
     password,

@@ -117,4 +117,62 @@ export const styles = StyleSheet.create({
     color: '#3f3a35',
     marginTop: 8,
   },
+  logNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  logNavButton: {
+    backgroundColor: '#103c2f',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+  },
+  logNavButtonDisabled: {
+    backgroundColor: '#c7b8a5',
+  },
+  logNavButtonText: {
+    color: '#fffaf3',
+    fontWeight: '700',
+  },
+  logPagerText: {
+    color: '#6b7280',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  logGroupHeader: {
+    marginBottom: 12,
+  },
+  logGroupFlowTitle: {
+    color: '#0f766e',
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  logGroupTitle: {
+    color: '#103c2f',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  logEntryCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#eadfce',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 10,
+  },
+  logEntryTitle: {
+    color: '#103c2f',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  logEntryTitleSuccess: {
+    color: '#0f766e',
+  },
+  logEntryTitleError: {
+    color: '#b42318',
+  },
 });

@@ -10,6 +10,21 @@ export type AppActions = {
   onRegisterIosKey: () => void;
 };
 
+export type LogEntry = {
+  id: string;
+  title: string;
+  detail?: string;
+  tone: 'info' | 'success' | 'error';
+};
+
+export type LogGroup = {
+  id: string;
+  title: string;
+  flowTitle: string;
+  status: 'running' | 'success' | 'error';
+  entries: LogEntry[];
+};
+
 export type RuntimeSummaryProps = {
   apiBaseUrl: string;
   challengeSummary: string;
@@ -27,7 +42,7 @@ export type AppScreenProps = {
   integrityMode: 'mock' | 'real';
   integrityModuleAvailable: boolean;
   loading: boolean;
-  log: string[];
+  logGroups: LogGroup[];
   nativePlatform: PlatformName;
   password: string;
   requestStatus: string;
