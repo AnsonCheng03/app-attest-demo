@@ -35,11 +35,16 @@ function missingModuleError() {
 }
 
 function moduleRecord(): AppIntegrityModule {
+  console.log("[integrity] resolving native module ExpoAppIntegrity");
   const mod =
     requireOptionalNativeModule<AppIntegrityModule>("ExpoAppIntegrity");
   if (!mod) {
+    console.log("[integrity] native module ExpoAppIntegrity missing");
     throw missingModuleError();
   }
+  console.log("[integrity] native module ExpoAppIntegrity loaded", {
+    keys: Object.keys(mod),
+  });
   return mod;
 }
 
@@ -76,8 +81,18 @@ export async function createAndroidProof(
   challenge: string,
   mode: "mock" | "real",
 ) {
+  console.log("[integrity] createAndroidProof:start", {
+    method,
+    path,
+    challengePreview: challenge.slice(0, 12),
+    mode,
+  });
   const requestHash = await buildRequestHash(method, path, bodyHash, challenge);
+  console.log("[integrity] createAndroidProof:requestHash", {
+    requestHashPreview: requestHash.slice(0, 12),
+  });
   if (mode === "mock") {
+    console.log("[integrity] createAndroidProof:using-mock");
     return `mock-play-integrity:${requestHash}`;
   }
 
@@ -100,16 +115,26 @@ export async function createAndroidProof(
       getToken as (options: { requestHash: string }) => Promise<string>
     )({ requestHash });
   } catch {
+    console.log("[integrity] createAndroidProof:fallback-signature");
     token = await (getToken as (requestHash: string) => Promise<string>)(
       requestHash,
     );
   }
 
+  console.log("[integrity] createAndroidProof:done", {
+    tokenPreview: token.slice(0, 12),
+  });
   return token;
 }
 
 export async function ensureIosKeyId() {
+  console.log("[integrity] ensureIosKeyId:start", {
+    cached: cachedIosKeyId,
+  });
   if (cachedIosKeyId) {
+    console.log("[integrity] ensureIosKeyId:return-cached", {
+      keyId: cachedIosKeyId,
+    });
     return cachedIosKeyId;
   }
 
@@ -118,6 +143,7 @@ export async function ensureIosKeyId() {
     mod = moduleRecord();
   } catch {
     cachedIosKeyId = "mock-ios-key";
+    console.log("[integrity] ensureIosKeyId:module-missing-using-mock-key");
     return cachedIosKeyId;
   }
 
@@ -127,10 +153,14 @@ export async function ensureIosKeyId() {
 
   if (!generator) {
     cachedIosKeyId = "mock-ios-key";
+    console.log("[integrity] ensureIosKeyId:no-generator-using-mock-key");
     return cachedIosKeyId;
   }
 
   cachedIosKeyId = await generator();
+  console.log("[integrity] ensureIosKeyId:generated", {
+    keyId: cachedIosKeyId,
+  });
   return cachedIosKeyId;
 }
 
@@ -139,7 +169,13 @@ export async function createIosAttestationObject(
   keyId: string,
   mode: "mock" | "real",
 ) {
+  console.log("[integrity] createIosAttestationObject:start", {
+    challengePreview: challenge.slice(0, 12),
+    keyId,
+    mode,
+  });
   if (mode === "mock") {
+    console.log("[integrity] createIosAttestationObject:using-mock");
     return `mock-ios-attestation:${challenge}:${keyId}`;
   }
 
@@ -159,18 +195,26 @@ export async function createIosAttestationObject(
   }
 
   if (attestor.length === 2) {
-    return (attestor as (first: string, second: string) => Promise<string>)(
+    const result = await (attestor as (first: string, second: string) => Promise<string>)(
       keyId,
       challenge,
     );
+    console.log("[integrity] createIosAttestationObject:done", {
+      attestationPreview: result.slice(0, 12),
+    });
+    return result;
   }
 
-  return (
+  const result = await (
     attestor as (options: {
       keyId: string;
       challenge: string;
     }) => Promise<string>
   )({ keyId, challenge });
+  console.log("[integrity] createIosAttestationObject:done", {
+    attestationPreview: result.slice(0, 12),
+  });
+  return result;
 }
 
 export async function createIosAssertion(
@@ -181,9 +225,22 @@ export async function createIosAssertion(
   keyId: string,
   mode: "mock" | "real",
 ) {
+  console.log("[integrity] createIosAssertion:start", {
+    method,
+    path,
+    challengePreview: challenge.slice(0, 12),
+    keyId,
+    mode,
+  });
   const requestHash = await buildRequestHash(method, path, bodyHash, challenge);
+  console.log("[integrity] createIosAssertion:requestHash", {
+    requestHashPreview: requestHash.slice(0, 12),
+  });
   if (mode === "mock") {
     mockIosSignCount += 1;
+    console.log("[integrity] createIosAssertion:using-mock", {
+      signCount: mockIosSignCount,
+    });
     return `${requestHash}|${mockIosSignCount}`;
   }
 
@@ -206,13 +263,17 @@ export async function createIosAssertion(
   }
 
   if (asserter.length === 2) {
-    return (asserter as (first: string, second: string) => Promise<string>)(
+    const result = await (asserter as (first: string, second: string) => Promise<string>)(
       keyId,
       requestHash,
     );
+    console.log("[integrity] createIosAssertion:done", {
+      assertionPreview: result.slice(0, 12),
+    });
+    return result;
   }
 
-  return (
+  const result = await (
     asserter as (options: {
       keyId: string;
       clientDataHash: string;
@@ -221,4 +282,8 @@ export async function createIosAssertion(
     keyId,
     clientDataHash: requestHash,
   });
+  console.log("[integrity] createIosAssertion:done", {
+    assertionPreview: result.slice(0, 12),
+  });
+  return result;
 }

@@ -4,14 +4,14 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo run:android",
+    "android": "node ./scripts/run-android.js",
     "ios": "expo run:ios",
     "ios:device": "expo run:ios --device",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@expo/app-integrity": "^56.0.3",
+    "@expo/app-integrity": "~55.0.14",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~55.0.27",
     "expo-crypto": "~55.0.16",

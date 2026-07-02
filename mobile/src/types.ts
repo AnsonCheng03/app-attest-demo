@@ -40,6 +40,10 @@ export interface ProfileResponse {
   tier: string;
 }
 
+export interface HealthResponse {
+  status: string;
+}
+
 export interface IosRegisterRequest {
   challengeId: string;
   challenge: string;

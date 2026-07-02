@@ -12,6 +12,7 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		9E5881E123BE10AAEE0B4604 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 083403F13776A2596A079785 /* ExpoModulesProvider.swift */; };
 		9E608D1874BBCC3DBAF0EE3D /* libPods-IntegrityDemoMobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5F9FA3AD52918A793052E4 /* libPods-IntegrityDemoMobile.a */; };
+		A6C13DD14D8A2B390BDB2957 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DF551D7361D90B2D70F8D7 /* SceneDelegate.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
@@ -27,6 +28,7 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		CA60416A354EE0A4AB748359 /* Pods-IntegrityDemoMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IntegrityDemoMobile.release.xcconfig"; path = "Target Support Files/Pods-IntegrityDemoMobile/Pods-IntegrityDemoMobile.release.xcconfig"; sourceTree = "<group>"; };
 		D08ED8B344D6A0556893C80D /* Pods-IntegrityDemoMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-IntegrityDemoMobile.debug.xcconfig"; path = "Target Support Files/Pods-IntegrityDemoMobile/Pods-IntegrityDemoMobile.debug.xcconfig"; sourceTree = "<group>"; };
+		D4DF551D7361D90B2D70F8D7 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SceneDelegate.swift; path = IntegrityDemoMobile/SceneDelegate.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = IntegrityDemoMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* IntegrityDemoMobile-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "IntegrityDemoMobile-Bridging-Header.h"; path = "IntegrityDemoMobile/IntegrityDemoMobile-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -48,6 +50,7 @@
 			isa = PBXGroup;
 			children = (
 				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				D4DF551D7361D90B2D70F8D7 /* SceneDelegate.swift */,
 				F11748442D0722820044C1D9 /* IntegrityDemoMobile-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -328,6 +331,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
+				A6C13DD14D8A2B390BDB2957 /* SceneDelegate.swift in Sources */,
 				9E5881E123BE10AAEE0B4604 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

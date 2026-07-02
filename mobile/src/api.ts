@@ -2,6 +2,7 @@ import {
   ChallengeResponse,
   CollectVoucherRequest,
   CollectVoucherResponse,
+  HealthResponse,
   IntegrityAction,
   IosRegisterRequest,
   IosRegisterResponse,
@@ -16,20 +17,47 @@ async function request<T>(
   path: string,
   options: RequestInit
 ): Promise<T> {
-  const response = await fetch(`${baseUrl}${path}`, {
+  const url = `${baseUrl}${path}`;
+  const startedAt = Date.now();
+  console.log('[api] request:start', {
+    method: options.method ?? 'GET',
+    url,
+    headers: options.headers,
+    body: options.body,
+  });
+  const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers ?? {}),
     },
   });
+  const durationMs = Date.now() - startedAt;
+  console.log('[api] request:response', {
+    method: options.method ?? 'GET',
+    url,
+    status: response.status,
+    ok: response.ok,
+    durationMs,
+  });
 
   if (!response.ok) {
     const body = await response.text();
+    console.log('[api] request:error-body', {
+      method: options.method ?? 'GET',
+      url,
+      body,
+    });
     throw new Error(`${response.status} ${response.statusText}: ${body}`);
   }
 
-  return response.json() as Promise<T>;
+  const json = (await response.json()) as T;
+  console.log('[api] request:success-body', {
+    method: options.method ?? 'GET',
+    url,
+    body: json,
+  });
+  return json;
 }
 
 export function createChallenge(
@@ -82,5 +110,11 @@ export function getProfile(baseUrl: string, token: string) {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  });
+}
+
+export function checkHealth(baseUrl: string) {
+  return request<HealthResponse>(baseUrl, '/actuator/health', {
+    method: 'GET',
   });
 }

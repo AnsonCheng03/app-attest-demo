@@ -26,6 +26,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - ExpoAppIntegrity (55.0.14):
+    - ExpoModulesCore
   - ExpoAsset (55.0.17):
     - ExpoModulesCore
   - ExpoCrypto (55.0.16):
@@ -1880,6 +1882,7 @@ PODS:
 DEPENDENCIES:
   - EXConstants (from `../node_modules/expo/node_modules/expo-constants/ios`)
   - Expo (from `../node_modules/expo`)
+  - "ExpoAppIntegrity (from `../node_modules/@expo/app-integrity/ios`)"
   - ExpoAsset (from `../node_modules/expo/node_modules/expo-asset/ios`)
   - ExpoCrypto (from `../node_modules/expo-crypto/ios`)
   - "ExpoDomWebView (from `../node_modules/expo/node_modules/@expo/log-box/node_modules/@expo/dom-webview/ios`)"
@@ -1971,6 +1974,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo/node_modules/expo-constants/ios"
   Expo:
     :path: "../node_modules/expo"
+  ExpoAppIntegrity:
+    :path: "../node_modules/@expo/app-integrity/ios"
   ExpoAsset:
     :path: "../node_modules/expo/node_modules/expo-asset/ios"
   ExpoCrypto:
@@ -2144,6 +2149,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   EXConstants: dadbeba983acc30f855a919658a2b34fbd86615d
   Expo: b0f96de93d2e9ab7c6eabcf88597b13f6fe3f67e
+  ExpoAppIntegrity: 4e47b5f12af29dcf917bca2c12bd1d8b9e968460
   ExpoAsset: 7721c5c4ae2a7c3c8147a046727ac6c020b05648
   ExpoCrypto: 1fe00d6b57bdc7bcf0c9eafedcae8fb5af6b8102
   ExpoDomWebView: b2e9d601f9cb77d3c97da73234e175b64be91928
@@ -2229,6 +2235,6 @@ SPEC CHECKSUMS:
   RNCAsyncStorage: 3a4f5e2777dae1688b781a487923a08569e27fe4
   Yoga: e41d64347f52d634dd8c2f6bac33f95081959fd3
 
-PODFILE CHECKSUM: b14fa736b29f4422e05f396ece894674b88adfe4
+PODFILE CHECKSUM: 2d40e983efcc48e1bc64cc19f9179176d405617b
 
 COCOAPODS: 1.16.2

@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import {
+  checkHealth,
   collectVoucher,
   createChallenge,
   getProfile,
@@ -47,6 +48,7 @@ export default function App() {
   const [challengeSummary, setChallengeSummary] = useState('');
   const [log, setLog] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [requestStatus, setRequestStatus] = useState('');
   const hasLoadedSavedInputs = useRef(false);
 
   const apiBaseUrl = apiBaseUrlInput.trim() || defaultApiBaseUrl;
@@ -121,53 +123,75 @@ export default function App() {
 
   const pushLog = (line: string) => setLog((current) => [line, ...current].slice(0, 20));
 
-  const withLoading = async (task: () => Promise<void>) => {
+  const updateRequestStatus = (line: string) => {
+    setRequestStatus(line);
+    pushLog(line);
+  };
+
+  const withLoading = async (
+    label: string,
+    task: (report: (line: string) => void) => Promise<void>
+  ) => {
     setLoading(true);
+    setRequestStatus(`${label}: starting`);
     try {
-      await task();
+      await task((line: string) => updateRequestStatus(`${label}: ${line}`));
+      setRequestStatus(`${label}: done`);
     } catch (error) {
-      pushLog(`ERROR: ${error instanceof Error ? error.message : String(error)}`);
+      const message = error instanceof Error ? error.message : String(error);
+      setRequestStatus(`${label}: failed`);
+      pushLog(`ERROR: ${label}: ${message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const onGetChallenge = (action: ActionName) =>
-    withLoading(async () => {
+    withLoading(`Get ${action} challenge`, async (report) => {
+      report(`requesting challenge for ${nativePlatform}`);
       const response = await createChallenge(apiBaseUrl, nativePlatform, action);
       setChallengeSummary(`${action}: ${response.challengeId}`);
+      report(`received challenge ${response.challengeId}`);
       pushLog(`Challenge for ${action}: ${response.challengeId}`);
     });
 
   const onRegisterIosKey = () =>
-    withLoading(async () => {
+    withLoading('Register iOS App Attest key', async (report) => {
       if (nativePlatform !== 'ios') {
         pushLog('iOS registration is only available when the app runs as iOS.');
         return;
       }
 
+      report('requesting registration challenge');
       const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
+      report('ensuring App Attest key exists');
       const keyId = await ensureIosKeyId();
+      report(`building attestation object for key ${keyId}`);
       const attestationObject = await createIosAttestationObject(
         challenge.challenge,
         keyId,
         integrityMode
       );
+      report('sending attestation to server');
       const response = await registerIosKey(apiBaseUrl, {
         challengeId: challenge.challengeId,
         challenge: challenge.challenge,
         keyId,
         attestationObject,
       });
+      report(`server registered key ${response.keyId}`);
       pushLog(`Registered iOS key ${response.keyId}`);
     });
 
   const onAndroidLogin = () =>
-    withLoading(async () => {
+    withLoading('Android login', async (report) => {
+      report('requesting login challenge');
       const challenge = await createChallenge(apiBaseUrl, 'android', 'login');
+      report('hashing login payload');
       const bodyHashForLogin = await sha256Base64(
         `username=${username}\npassword=${password}`
       );
+      report('creating Play Integrity proof');
       const proof = await createAndroidProof(
         'POST',
         loginPath,
@@ -175,6 +199,7 @@ export default function App() {
         challenge.challenge,
         integrityMode
       );
+      report('sending login request');
       const response = await login(apiBaseUrl, {
         username,
         password,
@@ -185,16 +210,21 @@ export default function App() {
         },
       });
       setToken(response.accessToken);
+      report('login succeeded and token received');
       pushLog(`Android login token: ${response.accessToken}`);
     });
 
   const onIosLogin = () =>
-    withLoading(async () => {
+    withLoading('iOS login', async (report) => {
+      report('requesting login challenge');
       const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
+      report('ensuring App Attest key exists');
       const keyId = await ensureIosKeyId();
+      report('hashing login payload');
       const bodyHashForLogin = await sha256Base64(
         `username=${username}\npassword=${password}`
       );
+      report(`generating assertion for key ${keyId}`);
       const assertion = await createIosAssertion(
         'POST',
         loginPath,
@@ -203,6 +233,7 @@ export default function App() {
         keyId,
         integrityMode
       );
+      report('sending login request');
       const response = await login(apiBaseUrl, {
         username,
         password,
@@ -213,28 +244,33 @@ export default function App() {
         },
       });
       setToken(response.accessToken);
+      report('login succeeded and token received');
       pushLog(`iOS login token: ${response.accessToken}`);
     });
 
   const onCollectVoucher = () =>
-    withLoading(async () => {
+    withLoading('Collect voucher', async (report) => {
       if (!token) {
         pushLog('Login first to get a bearer token.');
         return;
       }
 
       const actionPlatform = nativePlatform === 'ios' ? 'ios' : 'android';
+      report(`requesting collectVoucher challenge for ${actionPlatform}`);
       const challenge = await createChallenge(
         apiBaseUrl,
         actionPlatform,
         'collectVoucher'
       );
       const path = collectVoucherPath(voucherId);
+      report(`preparing request for ${path}`);
       const emptyBodyHash = await sha256Base64('');
       let proof: string;
 
       if (actionPlatform === 'ios') {
+        report('ensuring App Attest key exists');
         const keyId = await ensureIosKeyId();
+        report(`generating App Attest assertion for key ${keyId}`);
         const assertion = await createIosAssertion(
           'POST',
           path,
@@ -245,6 +281,7 @@ export default function App() {
         );
         proof = formatIosProof(keyId, assertion, integrityMode);
       } else {
+        report('creating Play Integrity proof');
         proof = await createAndroidProof(
           'POST',
           path,
@@ -254,23 +291,35 @@ export default function App() {
         );
       }
 
+      report('sending collect voucher request');
       const response = await collectVoucher(apiBaseUrl, token, voucherId, {
         platform: actionPlatform,
         challengeId: challenge.challengeId,
         proof,
       });
+      report(`server responded with status ${response.status}`);
       pushLog(`Voucher ${response.voucherId}: ${response.status}`);
     });
 
   const onGetProfile = () =>
-    withLoading(async () => {
+    withLoading('Get profile', async (report) => {
       if (!token) {
         pushLog('Login first to get a bearer token.');
         return;
       }
 
+      report('sending profile request');
       const response = await getProfile(apiBaseUrl, token);
+      report(`profile loaded for ${response.username}`);
       pushLog(`Profile ${response.username} (${response.tier})`);
+    });
+
+  const onCheckHealth = () =>
+    withLoading('Check backend health', async (report) => {
+      report('sending health request');
+      const response = await checkHealth(apiBaseUrl);
+      report(`backend health is ${response.status}`);
+      pushLog(`Health: ${response.status}`);
     });
 
   if (nativeRuntimeRequiredButMissing) {
@@ -398,13 +447,23 @@ export default function App() {
             label="iOS Login with App Attest"
             onPress={onIosLogin}
           />
+          <ActionButton label="Check Backend Health" onPress={onCheckHealth} />
           <ActionButton label="Collect Voucher" onPress={onCollectVoucher} />
           <ActionButton label="Get Profile" onPress={onGetProfile} />
         </View>
 
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Activity Log</Text>
-          {loading ? <ActivityIndicator color="#0f766e" /> : null}
+          {loading ? (
+            <View style={styles.requestStatusRow}>
+              <ActivityIndicator color="#0f766e" />
+              <Text style={styles.requestStatusText}>
+                {requestStatus || 'Working...'}
+              </Text>
+            </View>
+          ) : requestStatus ? (
+            <Text style={styles.helperText}>{requestStatus}</Text>
+          ) : null}
           {log.map((entry, index) => (
             <Text key={`${entry}-${index}`} style={styles.logLine}>
               {entry}
@@ -530,6 +589,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '700',
     fontSize: 15,
+  },
+  requestStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  requestStatusText: {
+    flex: 1,
+    color: '#0f766e',
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
   },
   logLine: {
     color: '#3f3a35',
