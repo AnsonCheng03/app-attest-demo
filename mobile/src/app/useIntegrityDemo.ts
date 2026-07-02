@@ -18,6 +18,7 @@ import {
   getIntegrityMode,
   getNativePlatform,
   isIntegrityModuleAvailable,
+  resetIosKeyId,
 } from '../integrity';
 import type { CollectVoucherRequest, IntegrityAction, PlatformName } from '../types';
 import type { LogEntry, LogGroup } from './types';
@@ -74,6 +75,11 @@ function formatErrorDetail(context: {
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+function isRecoverableIosRegistrationError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /stale|invalidinput|invalid input|invalid key/i.test(message);
 }
 
 export function useIntegrityDemo() {
@@ -311,24 +317,57 @@ export function useIntegrityDemo() {
             integrityMode,
           })
         );
-        const keyId = await ensureIosKeyId(integrityMode);
+        let keyId = await ensureIosKeyId(integrityMode);
         report(
           '4. Frontend resolved the App Attest key',
           formatLogIO({ integrityMode }, { keyId })
         );
-        const attestationInput = {
+        let attestationInput = {
           function: 'createIosAttestationObject',
           challenge: challenge.challenge,
           keyId,
           integrityMode,
         };
-        const attestationObject = await createIosAttestationObject(
-          challenge.challenge,
-          keyId,
-          integrityMode
-        );
+        let attestationObject: string;
+        try {
+          attestationObject = await createIosAttestationObject(
+            challenge.challenge,
+            keyId,
+            integrityMode
+          );
+        } catch (error) {
+          if (integrityMode !== 'real' || !isRecoverableIosRegistrationError(error)) {
+            throw error;
+          }
+          report(
+            '5. Existing App Attest key looked stale; clear it and generate a fresh key',
+            formatLogIO(
+              { function: 'resetIosKeyId', previousKeyId: keyId },
+              { retry: true }
+            ),
+            'info'
+          );
+          await resetIosKeyId();
+          keyId = await ensureIosKeyId(integrityMode, { forceNew: true });
+          report(
+            '6. Frontend generated a fresh App Attest key',
+            formatLogIO({ integrityMode, forceNew: true }, { keyId }),
+            'info'
+          );
+          attestationInput = {
+            function: 'createIosAttestationObject',
+            challenge: challenge.challenge,
+            keyId,
+            integrityMode,
+          };
+          attestationObject = await createIosAttestationObject(
+            challenge.challenge,
+            keyId,
+            integrityMode
+          );
+        }
         report(
-          '5. Build the App Attest attestation object',
+          '7. Build the App Attest attestation object',
           formatLogIO(attestationInput, { attestationObject })
         );
         const registerRequest = {
@@ -338,7 +377,7 @@ export function useIntegrityDemo() {
           attestationObject,
         };
         report(
-          '6. Send keyId + attestation object to backend',
+          '8. Send keyId + attestation object to backend',
           formatLogIO(
             {
               function: 'registerIosKey',
@@ -351,7 +390,7 @@ export function useIntegrityDemo() {
           ...registerRequest,
         });
         report(
-          '7. Backend registered the App Attest key',
+          '9. Backend registered the App Attest key',
           formatLogIO(registerRequest, response),
           'success'
         );

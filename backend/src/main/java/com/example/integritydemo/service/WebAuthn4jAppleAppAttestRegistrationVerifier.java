@@ -7,12 +7,13 @@ import com.webauthn4j.appattest.DeviceCheckManager;
 import com.webauthn4j.appattest.data.DCAttestationParameters;
 import com.webauthn4j.appattest.data.DCAttestationRequest;
 import com.webauthn4j.appattest.server.DCServerProperty;
+import com.webauthn4j.converter.AttestedCredentialDataConverter;
+import com.webauthn4j.converter.util.ObjectConverter;
 import com.webauthn4j.data.client.challenge.DefaultChallenge;
 import com.webauthn4j.verifier.exception.VerificationException;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.security.PublicKey;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -21,6 +22,8 @@ import java.util.Base64;
 public class WebAuthn4jAppleAppAttestRegistrationVerifier implements AppleAppAttestRegistrationVerifier {
 
     private final AppIntegrityProperties properties;
+    private final AttestedCredentialDataConverter attestedCredentialDataConverter =
+            new AttestedCredentialDataConverter(new ObjectConverter());
 
     public WebAuthn4jAppleAppAttestRegistrationVerifier(AppIntegrityProperties properties) {
         this.properties = properties;
@@ -56,15 +59,11 @@ public class WebAuthn4jAppleAppAttestRegistrationVerifier implements AppleAppAtt
                     .getAttestationObject()
                     .getAuthenticatorData()
                     .getAttestedCredentialData();
-            PublicKey publicKey = attestedCredentialData.getCOSEKey().getPublicKey();
-            if (publicKey == null || publicKey.getEncoded() == null) {
-                throw new IllegalArgumentException("Real iOS attestation verification failed: attested public key is unavailable");
-            }
-            byte[] publicKeyBytes = publicKey.getEncoded();
+            byte[] attestedCredentialDataBytes = attestedCredentialDataConverter.convert(attestedCredentialData);
 
             return new IosRegistrationVerificationResult(
                     "ios-device-" + keyId,
-                    Base64.getEncoder().encodeToString(publicKeyBytes),
+                    Base64.getEncoder().encodeToString(attestedCredentialDataBytes),
                     0L
             );
         } catch (VerificationException exception) {
