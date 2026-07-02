@@ -19,10 +19,62 @@ import {
   getNativePlatform,
   isIntegrityModuleAvailable,
 } from '../integrity';
-import type { IntegrityAction } from '../types';
+import type { CollectVoucherRequest, IntegrityAction, PlatformName } from '../types';
 import type { LogEntry, LogGroup } from './types';
 
 const inputStorageKey = 'integrity-demo-mobile-inputs';
+
+function previewValue(value: unknown): unknown {
+  if (typeof value === 'string') {
+    if (value.length <= 80) {
+      return value;
+    }
+
+    return `${value.slice(0, 32)}...${value.slice(-16)} (len=${value.length})`;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(previewValue);
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [
+        key,
+        previewValue(nestedValue),
+      ])
+    );
+  }
+
+  return value;
+}
+
+function formatLogIO(input: unknown, output?: unknown) {
+  const lines = [`Input: ${JSON.stringify(previewValue(input), null, 2)}`];
+
+  if (output !== undefined) {
+    lines.push(`Output: ${JSON.stringify(previewValue(output), null, 2)}`);
+  }
+
+  return lines.join('\n');
+}
+
+function formatErrorDetail(context: {
+  stepTitle?: string;
+  stepDetail?: string;
+  error: unknown;
+}) {
+  const message =
+    context.error instanceof Error ? context.error.message : String(context.error);
+
+  return [
+    `Failed at: ${context.stepTitle ?? 'unknown step'}`,
+    context.stepDetail ? `Last detail: ${context.stepDetail}` : undefined,
+    `Error: ${message}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
 
 export function useIntegrityDemo() {
   const defaultApiBaseUrl =
@@ -168,10 +220,14 @@ export function useIntegrityDemo() {
     ) => Promise<void>
   ) => {
     const groupId = startLogGroup(label, flowTitle);
+    let lastStepTitle: string | undefined;
+    let lastStepDetail: string | undefined;
     setLoading(true);
     updateRequestStatus(label, 'starting');
     try {
       await task((title, detail, tone = 'info') => {
+        lastStepTitle = title;
+        lastStepDetail = detail;
         updateRequestStatus(title, detail);
         appendLogEntry(groupId, { title, detail, tone });
       });
@@ -183,10 +239,13 @@ export function useIntegrityDemo() {
       setLogGroupStatus(groupId, 'success');
       updateRequestStatus(label, 'done');
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
       appendLogEntry(groupId, {
         title: 'Request failed',
-        detail: message,
+        detail: formatErrorDetail({
+          stepTitle: lastStepTitle,
+          stepDetail: lastStepDetail,
+          error,
+        }),
         tone: 'error',
       });
       setLogGroupStatus(groupId, 'error');
@@ -198,15 +257,26 @@ export function useIntegrityDemo() {
 
   const onGetChallenge = (action: IntegrityAction) =>
     withLoading(`Get ${action} challenge`, 'Challenge Request', async (report) => {
+      const challengeRequest = { platform: nativePlatform, action };
       report(
         '1. Ask backend for a one-time challenge',
-        `Platform: ${nativePlatform}, action: ${action}`
+        formatLogIO(
+          {
+            function: 'createChallenge',
+            baseUrl: apiBaseUrl,
+            request: challengeRequest,
+          }
+        )
       );
-      const response = await createChallenge(apiBaseUrl, nativePlatform, action);
+      const response = await createChallenge(
+        apiBaseUrl,
+        challengeRequest.platform,
+        challengeRequest.action
+      );
       setChallengeSummary(`${action}: ${response.challengeId}`);
       report(
         '2. Backend returned challenge details',
-        `Challenge ID: ${response.challengeId}`
+        formatLogIO(challengeRequest, response)
       );
     });
 
@@ -221,36 +291,68 @@ export function useIntegrityDemo() {
 
         report(
           '1. Ask backend for a one-time registration challenge',
-          'Backend creates a fresh iOS registration nonce.'
+          formatLogIO(
+            {
+              function: 'createChallenge',
+              baseUrl: apiBaseUrl,
+              request: { platform: 'ios', action: 'login' },
+            }
+          )
         );
         const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
         report(
-          '2. Load or create the App Attest key',
-          'The device returns the keyId without exposing the private key.'
+          '2. Backend returned the registration challenge',
+          formatLogIO({ platform: 'ios', action: 'login' }, challenge)
+        );
+        report(
+          '3. Load or create the App Attest key',
+          formatLogIO({
+            function: 'ensureIosKeyId',
+            integrityMode,
+          })
         );
         const keyId = await ensureIosKeyId(integrityMode);
         report(
-          '3. Build the App Attest attestation object',
-          `Creating attestation for key ${keyId}.`
+          '4. Frontend resolved the App Attest key',
+          formatLogIO({ integrityMode }, { keyId })
         );
+        const attestationInput = {
+          function: 'createIosAttestationObject',
+          challenge: challenge.challenge,
+          keyId,
+          integrityMode,
+        };
         const attestationObject = await createIosAttestationObject(
           challenge.challenge,
           keyId,
           integrityMode
         );
         report(
-          '4. Send keyId + attestation object to backend',
-          'Backend will verify the attestation and store the device key.'
+          '5. Build the App Attest attestation object',
+          formatLogIO(attestationInput, { attestationObject })
         );
-        const response = await registerIosKey(apiBaseUrl, {
+        const registerRequest = {
           challengeId: challenge.challengeId,
           challenge: challenge.challenge,
           keyId,
           attestationObject,
+        };
+        report(
+          '6. Send keyId + attestation object to backend',
+          formatLogIO(
+            {
+              function: 'registerIosKey',
+              baseUrl: apiBaseUrl,
+              request: registerRequest,
+            }
+          )
+        );
+        const response = await registerIosKey(apiBaseUrl, {
+          ...registerRequest,
         });
         report(
-          '5. Backend registered the App Attest key',
-          `Registered keyId: ${response.keyId}`,
+          '7. Backend registered the App Attest key',
+          formatLogIO(registerRequest, response),
           'success'
         );
       }
@@ -258,22 +360,42 @@ export function useIntegrityDemo() {
 
   const onAndroidLogin = () =>
     withLoading('Android login', 'Play Integrity Login', async (report) => {
+      const challengeRequest = { platform: 'android' as const, action: 'login' as const };
       report(
         '1. Ask backend for a one-time login challenge',
-        'Backend issues a fresh challenge for this protected request.'
+        formatLogIO({
+          function: 'createChallenge',
+          baseUrl: apiBaseUrl,
+          request: challengeRequest,
+        })
       );
       const challenge = await createChallenge(apiBaseUrl, 'android', 'login');
       report(
-        '2. Build request-bound hash inputs',
-        'Hashing the login body so the proof is tied to this request.'
+        '2. Backend returned the login challenge',
+        formatLogIO(challengeRequest, challenge)
       );
+      const loginBody = `username=${username}\npassword=${password}`;
       const bodyHashForLogin = await sha256Base64(
-        `username=${username}\npassword=${password}`
+        loginBody
       );
       report(
-        '3. Request Play Integrity proof from the runtime',
-        'The app asks the platform layer for a request-bound proof.'
+        '3. Build request-bound hash inputs',
+        formatLogIO(
+          {
+            function: 'sha256Base64',
+            input: loginBody,
+          },
+          { bodyHash: bodyHashForLogin }
+        )
       );
+      const proofInput = {
+        function: 'createAndroidProof',
+        method: 'POST',
+        path: loginPath,
+        bodyHash: bodyHashForLogin,
+        challenge: challenge.challenge,
+        integrityMode,
+      };
       const proof = await createAndroidProof(
         'POST',
         loginPath,
@@ -282,49 +404,83 @@ export function useIntegrityDemo() {
         integrityMode
       );
       report(
-        '4. Send login request + integrity proof to backend',
-        'Backend can now verify the proof against the protected request.'
+        '4. Request Play Integrity proof from the runtime',
+        formatLogIO(proofInput, { proof })
       );
-      const response = await login(apiBaseUrl, {
+      const loginRequest = {
         username,
         password,
         integrity: {
-          platform: 'android',
+          platform: 'android' as const,
           challengeId: challenge.challengeId,
           proof,
         },
+      };
+      report(
+        '5. Send login request + integrity proof to backend',
+        formatLogIO({
+          function: 'login',
+          baseUrl: apiBaseUrl,
+          request: loginRequest,
+        })
+      );
+      const response = await login(apiBaseUrl, {
+        ...loginRequest,
       });
       setToken(response.accessToken);
       report(
-        '5. Backend accepted the login',
-        `Access token received: ${response.accessToken}`,
+        '6. Backend accepted the login',
+        formatLogIO(loginRequest, response),
         'success'
       );
     });
 
   const onIosLogin = () =>
     withLoading('iOS login', 'App Attest Assertion Login', async (report) => {
+      const challengeRequest = { platform: 'ios' as const, action: 'login' as const };
       report(
         '1. Ask backend for a fresh assertion challenge',
-        'Backend issues a one-time challenge for this protected login.'
+        formatLogIO({
+          function: 'createChallenge',
+          baseUrl: apiBaseUrl,
+          request: challengeRequest,
+        })
       );
       const challenge = await createChallenge(apiBaseUrl, 'ios', 'login');
       report(
-        '2. Load the registered App Attest key',
-        'Using the previously registered keyId for this device.'
+        '2. Backend returned the assertion challenge',
+        formatLogIO(challengeRequest, challenge)
+      );
+      report(
+        '3. Load the registered App Attest key',
+        formatLogIO({
+          function: 'ensureIosKeyId',
+          integrityMode,
+        })
       );
       const keyId = await ensureIosKeyId(integrityMode);
+      report('4. Frontend resolved the App Attest key', formatLogIO({ integrityMode }, { keyId }));
+      const loginBody = `username=${username}\npassword=${password}`;
+      const bodyHashForLogin = await sha256Base64(loginBody);
       report(
-        '3. Build request-bound client data hash',
-        'Hashing the login request body before generating an assertion.'
+        '5. Build request-bound client data hash',
+        formatLogIO(
+          {
+            function: 'sha256Base64',
+            input: loginBody,
+          },
+          { bodyHash: bodyHashForLogin }
+        )
       );
-      const bodyHashForLogin = await sha256Base64(
-        `username=${username}\npassword=${password}`
-      );
-      report(
-        '4. Generate the App Attest assertion',
-        `Signing the request hash with key ${keyId}.`
-      );
+      const assertionInput = {
+        function: 'createIosAssertion',
+        method: 'POST',
+        path: loginPath,
+        bodyHash: bodyHashForLogin,
+        challenge: challenge.challenge,
+        keyId,
+        integrityMode,
+      };
       const assertion = await createIosAssertion(
         'POST',
         loginPath,
@@ -334,22 +490,44 @@ export function useIntegrityDemo() {
         integrityMode
       );
       report(
-        '5. Send login request + assertion to backend',
-        'Backend verifies the assertion using the stored public key.'
+        '6. Generate the App Attest assertion',
+        formatLogIO(assertionInput, { assertion })
       );
-      const response = await login(apiBaseUrl, {
+      const proofInput = {
+        function: 'formatIosProof',
+        keyId,
+        assertion,
+        integrityMode,
+      };
+      const proof = formatIosProof(keyId, assertion, integrityMode);
+      report(
+        '7. Format the iOS proof string',
+        formatLogIO(proofInput, { proof })
+      );
+      const loginRequest = {
         username,
         password,
         integrity: {
-          platform: 'ios',
+          platform: 'ios' as const,
           challengeId: challenge.challengeId,
-          proof: formatIosProof(keyId, assertion, integrityMode),
+          proof,
         },
+      };
+      report(
+        '8. Send login request + assertion to backend',
+        formatLogIO({
+          function: 'login',
+          baseUrl: apiBaseUrl,
+          request: loginRequest,
+        })
+      );
+      const response = await login(apiBaseUrl, {
+        ...loginRequest,
       });
       setToken(response.accessToken);
       report(
-        '6. Backend accepted the login',
-        `Access token received: ${response.accessToken}`,
+        '9. Backend accepted the login',
+        formatLogIO(loginRequest, response),
         'success'
       );
     });
@@ -365,10 +543,19 @@ export function useIntegrityDemo() {
           throw new Error('Login first before collecting a voucher.');
         }
 
-        const actionPlatform = nativePlatform === 'ios' ? 'ios' : 'android';
+        const actionPlatform: PlatformName =
+          nativePlatform === 'ios' ? 'ios' : 'android';
+        const challengeRequest = {
+          platform: actionPlatform,
+          action: 'collectVoucher' as const,
+        };
         report(
           '1. Ask backend for a fresh protected-request challenge',
-          `Platform: ${actionPlatform}, action: collectVoucher`
+          formatLogIO({
+            function: 'createChallenge',
+            baseUrl: apiBaseUrl,
+            request: challengeRequest,
+          })
         );
         const challenge = await createChallenge(
           apiBaseUrl,
@@ -377,22 +564,44 @@ export function useIntegrityDemo() {
         );
         const path = collectVoucherPath(voucherId);
         report(
-          '2. Build request-bound hash inputs',
-          `Preparing proof inputs for ${path}.`
+          '2. Backend returned the protected-request challenge',
+          formatLogIO(challengeRequest, challenge)
         );
         const emptyBodyHash = await sha256Base64('');
+        report(
+          '3. Build request-bound hash inputs',
+          formatLogIO(
+            {
+              function: 'sha256Base64',
+              input: '',
+            },
+            {
+              path,
+              bodyHash: emptyBodyHash,
+            }
+          )
+        );
         let proof: string;
 
         if (actionPlatform === 'ios') {
           report(
-            '3. Load the registered App Attest key',
-            'The device will use the stored private key for this assertion.'
+            '4. Load the registered App Attest key',
+            formatLogIO({
+              function: 'ensureIosKeyId',
+              integrityMode,
+            })
           );
           const keyId = await ensureIosKeyId(integrityMode);
-          report(
-            '4. Generate App Attest assertion',
-            `Signing the request hash with key ${keyId}.`
-          );
+          report('5. Frontend resolved the App Attest key', formatLogIO({ integrityMode }, { keyId }));
+          const assertionInput = {
+            function: 'createIosAssertion',
+            method: 'POST',
+            path,
+            bodyHash: emptyBodyHash,
+            challenge: challenge.challenge,
+            keyId,
+            integrityMode,
+          };
           const assertion = await createIosAssertion(
             'POST',
             path,
@@ -401,12 +610,30 @@ export function useIntegrityDemo() {
             keyId,
             integrityMode
           );
-          proof = formatIosProof(keyId, assertion, integrityMode);
-        } else {
           report(
-            '3. Request Play Integrity proof from the runtime',
-            'The proof is bound to this collect-voucher request.'
+            '6. Generate App Attest assertion',
+            formatLogIO(assertionInput, { assertion })
           );
+          const proofInput = {
+            function: 'formatIosProof',
+            keyId,
+            assertion,
+            integrityMode,
+          };
+          proof = formatIosProof(keyId, assertion, integrityMode);
+          report(
+            '7. Format the iOS proof string',
+            formatLogIO(proofInput, { proof })
+          );
+        } else {
+          const proofInput = {
+            function: 'createAndroidProof',
+            method: 'POST',
+            path,
+            bodyHash: emptyBodyHash,
+            challenge: challenge.challenge,
+            integrityMode,
+          };
           proof = await createAndroidProof(
             'POST',
             path,
@@ -414,24 +641,40 @@ export function useIntegrityDemo() {
             challenge.challenge,
             integrityMode
           );
+          report(
+            '4. Request Play Integrity proof from the runtime',
+            formatLogIO(proofInput, { proof })
+          );
         }
 
-        report(
-          actionPlatform === 'ios'
-            ? '5. Send voucher request + assertion to backend'
-            : '4. Send voucher request + integrity proof to backend',
-          'Backend validates the proof before processing the voucher.'
-        );
-        const response = await collectVoucher(apiBaseUrl, token, voucherId, {
+        const collectRequest: CollectVoucherRequest = {
           platform: actionPlatform,
           challengeId: challenge.challengeId,
           proof,
-        });
+        };
         report(
           actionPlatform === 'ios'
-            ? '6. Backend accepted the protected request'
-            : '5. Backend accepted the protected request',
-          `Voucher ${response.voucherId}: ${response.status}`,
+            ? '8. Send voucher request + assertion to backend'
+            : '5. Send voucher request + integrity proof to backend',
+          formatLogIO({
+            function: 'collectVoucher',
+            baseUrl: apiBaseUrl,
+            token,
+            voucherId,
+            request: collectRequest,
+          })
+        );
+        const response = await collectVoucher(
+          apiBaseUrl,
+          token,
+          voucherId,
+          collectRequest
+        );
+        report(
+          actionPlatform === 'ios'
+            ? '9. Backend accepted the protected request'
+            : '6. Backend accepted the protected request',
+          formatLogIO(collectRequest, response),
           'success'
         );
       }
@@ -445,12 +688,15 @@ export function useIntegrityDemo() {
 
       report(
         '1. Send authenticated profile request',
-        'This endpoint uses the bearer token and does not require fresh integrity.'
+        formatLogIO({
+          function: 'getProfile',
+          baseUrl: apiBaseUrl,
+          token,
+        })
       );
-      const response = await getProfile(apiBaseUrl, token);
       report(
         '2. Backend returned the profile',
-        `Profile ${response.username} (${response.tier})`,
+        formatLogIO({ token }, await getProfile(apiBaseUrl, token)),
         'success'
       );
     });
@@ -459,12 +705,15 @@ export function useIntegrityDemo() {
     withLoading('Check backend health', 'Backend Health Check', async (report) => {
       report(
         '1. Send backend health request',
-        'Checking whether the API is reachable.'
+        formatLogIO({
+          function: 'checkHealth',
+          baseUrl: apiBaseUrl,
+        })
       );
       const response = await checkHealth(apiBaseUrl);
       report(
         '2. Backend health response received',
-        `Health: ${response.status}`,
+        formatLogIO({ baseUrl: apiBaseUrl }, response),
         'success'
       );
     });

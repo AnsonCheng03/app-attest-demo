@@ -11,12 +11,29 @@ public class MockAppleAppAttestRegistrationVerifier implements AppleAppAttestReg
 
     private static final Logger log = LoggerFactory.getLogger(MockAppleAppAttestRegistrationVerifier.class);
 
+    private static String preview(String value) {
+        if (value == null) {
+            return "null";
+        }
+        if (value.length() <= 48) {
+            return value;
+        }
+        return value.substring(0, 24) + "..." + value.substring(value.length() - 12);
+    }
+
     @Override
     public IosRegistrationVerificationResult verifyRegistration(String challenge, String keyId, String attestationObjectBase64) {
         String expected = "mock-ios-attestation:" + challenge + ":" + keyId;
-        log.info("Mock iOS registration verify keyId={} expectedPreview={} actualPreview={}", keyId, expected.substring(0, Math.min(16, expected.length())), attestationObjectBase64.substring(0, Math.min(16, attestationObjectBase64.length())));
+        String expectedPreview = preview(expected);
+        String actualPreview = preview(attestationObjectBase64);
+        log.info("Mock iOS registration verify keyId={} expectedPreview={} actualPreview={}", keyId, expectedPreview, actualPreview);
         if (!expected.equals(attestationObjectBase64)) {
-            throw new IllegalArgumentException("Mock iOS attestation object mismatch");
+            throw new IllegalArgumentException(
+                    "Mock iOS attestation object mismatch"
+                            + " | keyId=" + keyId
+                            + " | expected=" + expectedPreview
+                            + " | actual=" + actualPreview
+            );
         }
         log.info("Mock iOS registration accepted keyId={}", keyId);
         return new IosRegistrationVerificationResult("ios-device-" + keyId, "mock-public-key-" + keyId, 0L);
