@@ -73,6 +73,14 @@ function mockIosKeyId() {
   return "mock-ios-key";
 }
 
+function mockAndroidProof(requestHash: string) {
+  return `mock-play-integrity:${requestHash}`;
+}
+
+function canFallbackToMockRuntime() {
+  return !mobileConfig.requireNativeRuntime;
+}
+
 function isAppAttestRecoverableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return /invalid input provided|invalid key provided/i.test(message);
@@ -151,10 +159,22 @@ export async function createAndroidProof(
   });
   if (mode === "mock") {
     console.log("[integrity] createAndroidProof:using-mock");
-    return `mock-play-integrity:${requestHash}`;
+    return mockAndroidProof(requestHash);
   }
 
-  const mod = moduleRecord();
+  let mod: AppIntegrityModule;
+  try {
+    mod = moduleRecord();
+  } catch (error) {
+    if (canFallbackToMockRuntime()) {
+      console.log("[integrity] createAndroidProof:module-missing-fallback-mock", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return mockAndroidProof(requestHash);
+    }
+    throw error;
+  }
+
   const getToken =
     (mod.requestPlayIntegrityTokenAsync as
       | undefined
@@ -164,6 +184,10 @@ export async function createAndroidProof(
       | ((requestHash: string) => Promise<string>));
 
   if (!getToken) {
+    if (canFallbackToMockRuntime()) {
+      console.log("[integrity] createAndroidProof:api-missing-fallback-mock");
+      return mockAndroidProof(requestHash);
+    }
     throw new Error("Play Integrity API is unavailable in this Expo runtime.");
   }
 
@@ -172,11 +196,29 @@ export async function createAndroidProof(
     token = await (
       getToken as (options: { requestHash: string }) => Promise<string>
     )({ requestHash });
-  } catch {
+  } catch (error) {
     console.log("[integrity] createAndroidProof:fallback-signature");
-    token = await (getToken as (requestHash: string) => Promise<string>)(
-      requestHash,
-    );
+    try {
+      token = await (getToken as (requestHash: string) => Promise<string>)(
+        requestHash,
+      );
+    } catch (fallbackError) {
+      if (canFallbackToMockRuntime()) {
+        console.log(
+          "[integrity] createAndroidProof:token-request-failed-fallback-mock",
+          {
+            error:
+              fallbackError instanceof Error
+                ? fallbackError.message
+                : String(fallbackError),
+            firstError:
+              error instanceof Error ? error.message : String(error),
+          },
+        );
+        return mockAndroidProof(requestHash);
+      }
+      throw fallbackError;
+    }
   }
 
   console.log("[integrity] createAndroidProof:done", {

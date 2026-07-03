@@ -100,7 +100,8 @@ export function useIntegrityDemo() {
   const nativePlatform = getNativePlatform();
   const integrityModuleAvailable = isIntegrityModuleAvailable();
   const nativeRuntimeRequiredButMissing =
-    requireNativeRuntime && !integrityModuleAvailable;
+    (requireNativeRuntime || integrityMode === 'real') &&
+    !integrityModuleAvailable;
 
   useEffect(() => {
     let cancelled = false;
