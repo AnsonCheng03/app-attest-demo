@@ -4,31 +4,55 @@ import com.example.integritydemo.config.AppIntegrityProperties;
 import com.example.integritydemo.integrity.AppIntegrityVerifier;
 import com.example.integritydemo.integrity.IntegrityVerificationRequest;
 import com.example.integritydemo.integrity.IntegrityVerificationResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RealGooglePlayIntegrityVerifier implements AppIntegrityVerifier {
 
-    private final AppIntegrityProperties properties;
+    private static final Logger log = LoggerFactory.getLogger(RealGooglePlayIntegrityVerifier.class);
 
-    public RealGooglePlayIntegrityVerifier(AppIntegrityProperties properties) {
+    private final AppIntegrityProperties properties;
+    private final LogSanitizer logSanitizer;
+
+    public RealGooglePlayIntegrityVerifier(AppIntegrityProperties properties, LogSanitizer logSanitizer) {
         this.properties = properties;
+        this.logSanitizer = logSanitizer;
     }
 
     @Override
     public IntegrityVerificationResult verify(IntegrityVerificationRequest request) {
-        // TODO: Replace this placeholder with real Google Play Integrity verification:
-        // 1. Call Google Play Integrity API / decode the returned token.
-        // 2. Check packageName == configured expected package name.
-        // 3. Check certificate digest == configured expected signing cert digest.
-        // 4. Check appRecognitionVerdict == PLAY_RECOGNIZED.
-        // 5. Check deviceIntegrity contains MEETS_DEVICE_INTEGRITY.
-        // 6. Check requestHash matches request.requestHash().
-        // Android verification is Google-backed; the backend should not trust any public key
-        // supplied per request because the trust anchor is Google's signed verdict.
-        return IntegrityVerificationResult.failure(
-                "Real Google Play Integrity verification is not wired yet for package "
-                        + properties.getAndroid().getPackageName()
+        String proof = request.proof();
+        log.info(
+                "RealGooglePlayIntegrityVerifier verify proofPreview={} requestHashPreview={} packageName={} allowUnverifiedTokens={}",
+                logSanitizer.proofPreview(proof),
+                logSanitizer.preview(request.requestHash()),
+                properties.getAndroid().getPackageName(),
+                properties.getAndroid().isAllowUnverifiedTokens()
+        );
+
+        if (proof == null || proof.isBlank()) {
+            return IntegrityVerificationResult.failure("Android Play Integrity token is missing");
+        }
+        if (properties.getAndroid().getPackageName() == null || properties.getAndroid().getPackageName().isBlank()) {
+            return IntegrityVerificationResult.failure("Android packageName config missing");
+        }
+
+        if (!properties.getAndroid().isAllowUnverifiedTokens()) {
+            return IntegrityVerificationResult.failure(
+                    "Real Google Play Integrity decode is not wired yet. Configure Google server-side verification or enable demo fallback."
+            );
+        }
+
+        log.warn(
+                "Accepting Android integrity token in demo fallback mode without Google server-side verification packageName={} tokenPreview={}",
+                properties.getAndroid().getPackageName(),
+                logSanitizer.proofPreview(proof)
+        );
+        return IntegrityVerificationResult.success(
+                "android-device-demo",
+                "Demo Android integrity token accepted without Google verification"
         );
     }
 }

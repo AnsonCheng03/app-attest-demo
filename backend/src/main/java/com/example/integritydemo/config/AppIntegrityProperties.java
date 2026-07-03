@@ -28,6 +28,7 @@ public class AppIntegrityProperties {
     public static class Android {
         private String packageName;
         private String certificateDigest;
+        private boolean allowUnverifiedTokens = true;
 
         public String getPackageName() {
             return packageName;
@@ -43,6 +44,14 @@ public class AppIntegrityProperties {
 
         public void setCertificateDigest(String certificateDigest) {
             this.certificateDigest = certificateDigest;
+        }
+
+        public boolean isAllowUnverifiedTokens() {
+            return allowUnverifiedTokens;
+        }
+
+        public void setAllowUnverifiedTokens(boolean allowUnverifiedTokens) {
+            this.allowUnverifiedTokens = allowUnverifiedTokens;
         }
     }
 

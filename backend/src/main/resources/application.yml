@@ -25,8 +25,9 @@ app:
   integrity:
     mode: real
     android:
-      packageName: com.example.integritydemo
+      packageName: com.anson12666.integritydemomobile
       certificateDigest: CHANGE_ME
+      allowUnverifiedTokens: true
     ios:
       bundleId: com.anson12666.integritydemomobile
       teamId: 538FVU496F

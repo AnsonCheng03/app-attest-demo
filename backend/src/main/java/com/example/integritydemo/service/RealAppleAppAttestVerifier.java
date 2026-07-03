@@ -105,7 +105,7 @@ public class RealAppleAppAttestVerifier implements AppIntegrityVerifier {
         );
 
         try {
-            var assertionData = manager.validate(assertionRequest, assertionParameters);
+            var assertionData = manager.verify(assertionRequest, assertionParameters);
             long newSignCount = assertionData.getAuthenticatorData().getSignCount();
             iosDeviceRepository.update(record.withSignCount(newSignCount));
             log.info(

@@ -54,7 +54,7 @@ public class WebAuthn4jAppleAppAttestRegistrationVerifier implements AppleAppAtt
         );
 
         try {
-            var attestationData = deviceCheckManager.validate(attestationRequest, attestationParameters);
+            var attestationData = deviceCheckManager.verify(attestationRequest, attestationParameters);
             var attestedCredentialData = attestationData
                     .getAttestationObject()
                     .getAuthenticatorData()
