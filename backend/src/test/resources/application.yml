@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:integrity-demo-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+
+app:
+  auth:
+    jwtSecret: test-jwt-secret-for-backend-tests
+    tokenTtlSeconds: 86400
+  integrity:
+    mode: mock
+    android:
+      packageName: com.anson12666.integritydemomobile
+      certificateDigest: TEST_DIGEST
+      allowUnverifiedTokens: true
+    ios:
+      bundleId: com.anson12666.integritydemomobile
+      teamId: TESTTEAMID
+      appAttestEnvironment: development
