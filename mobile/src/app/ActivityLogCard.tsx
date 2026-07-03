@@ -24,7 +24,11 @@ export function ActivityLogCard({
 
   return (
     <View style={styles.card}>
+      <Text style={styles.cardEyebrow}>Observability</Text>
       <Text style={styles.sectionTitle}>Activity Log</Text>
+      <Text style={styles.helperText}>
+        Every flow is expanded into step-by-step frontend and backend actions.
+      </Text>
       {logGroups.length ? (
         <>
           <View style={styles.logNavRow}>
@@ -38,7 +42,7 @@ export function ActivityLogCard({
                 setSelectedGroupIndex((current) => Math.max(0, current - 1))
               }
             >
-              <Text style={styles.logNavButtonText}>Left</Text>
+              <Text style={styles.logNavButtonText}>Newer</Text>
             </Pressable>
             <Text style={styles.logPagerText}>
               {selectedGroupIndex + 1} / {logGroups.length}
@@ -55,16 +59,18 @@ export function ActivityLogCard({
                 )
               }
             >
-              <Text style={styles.logNavButtonText}>Right</Text>
+              <Text style={styles.logNavButtonText}>Older</Text>
             </Pressable>
           </View>
 
           <View style={styles.logGroupHeader}>
             <Text style={styles.logGroupFlowTitle}>{selectedGroup.flowTitle}</Text>
             <Text style={styles.logGroupTitle}>{selectedGroup.title}</Text>
-            <Text style={styles.helperText}>
-              Status: {selectedGroup.status}
-            </Text>
+            <View style={styles.logStatusBadge}>
+              <Text style={styles.logStatusBadgeText}>
+                Status: {selectedGroup.status}
+              </Text>
+            </View>
           </View>
 
           {loading && selectedGroupIndex === 0 ? (
@@ -100,7 +106,7 @@ export function ActivityLogCard({
         </>
       ) : (
         <Text style={styles.helperText}>
-          No activity yet. Tap an action button to start a new log section.
+          No activity yet. Run any action to generate a full trace here.
         </Text>
       )}
     </View>

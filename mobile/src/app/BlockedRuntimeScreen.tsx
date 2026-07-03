@@ -5,9 +5,10 @@ import { styles } from './styles';
 
 export function BlockedRuntimeScreen({ apiBaseUrl }: { apiBaseUrl: string }) {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.blockedScreen}>
-        <View style={[styles.statusCard, styles.statusFallback]}>
+        <View style={[styles.card, styles.blockedCard, styles.statusFallback]}>
+          <Text style={styles.cardEyebrow}>Runtime Blocked</Text>
           <Text style={styles.title}>Native Build Required</Text>
           <Text style={styles.statusText}>
             This runtime cannot provide the native Play Integrity or App Attest

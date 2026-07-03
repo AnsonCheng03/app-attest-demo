@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionList } from './ActionList';
 import { ActivityLogCard } from './ActivityLogCard';
@@ -30,7 +30,7 @@ export function AppScreen({
   username,
 }: AppScreenProps) {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container}>
         <RuntimeSummary
           apiBaseUrl={apiBaseUrl}
@@ -60,6 +60,7 @@ export function AppScreen({
           logGroups={logGroups}
           requestStatus={requestStatus}
         />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );

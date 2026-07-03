@@ -16,6 +16,7 @@ export function RuntimeStatusCard({
         integrityModuleAvailable ? styles.statusReady : styles.statusFallback,
       ]}
     >
+      <Text style={styles.cardEyebrow}>Runtime</Text>
       <Text style={styles.statusTitle}>
         {integrityModuleAvailable
           ? 'Native integrity module detected'
