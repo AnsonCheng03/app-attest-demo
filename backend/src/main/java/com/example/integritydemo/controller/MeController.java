@@ -3,12 +3,11 @@ package com.example.integritydemo.controller;
 import com.example.integritydemo.dto.CollectVoucherRequest;
 import com.example.integritydemo.dto.CollectVoucherResponse;
 import com.example.integritydemo.dto.ProfileResponse;
+import com.example.integritydemo.integrity.RequireIntegrity;
 import com.example.integritydemo.model.AuthenticatedUser;
 import com.example.integritydemo.model.IntegrityAction;
 import com.example.integritydemo.service.AuthTokenResolver;
-import com.example.integritydemo.service.IntegrityService;
 import com.example.integritydemo.service.LogSanitizer;
-import com.example.integritydemo.service.RequestPayloadHasher;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,23 +26,18 @@ public class MeController {
     private static final Logger log = LoggerFactory.getLogger(MeController.class);
 
     private final AuthTokenResolver authTokenResolver;
-    private final IntegrityService integrityService;
-    private final RequestPayloadHasher requestPayloadHasher;
     private final LogSanitizer logSanitizer;
 
     public MeController(
             AuthTokenResolver authTokenResolver,
-            IntegrityService integrityService,
-            RequestPayloadHasher requestPayloadHasher,
             LogSanitizer logSanitizer
     ) {
         this.authTokenResolver = authTokenResolver;
-        this.integrityService = integrityService;
-        this.requestPayloadHasher = requestPayloadHasher;
         this.logSanitizer = logSanitizer;
     }
 
     @PostMapping("/vouchers/{voucherId}/collect")
+    @RequireIntegrity(value = IntegrityAction.collectVoucher, authenticated = true)
     public CollectVoucherResponse collectVoucher(
             @RequestHeader("Authorization") String authorization,
             @PathVariable String voucherId,
@@ -53,21 +47,11 @@ public class MeController {
                 "HTTP POST /me/vouchers/{}/collect authorization={} platform={} challengeId={} proofPreview={}",
                 voucherId,
                 logSanitizer.bearerPreview(authorization),
-                request.platform(),
-                request.challengeId(),
-                logSanitizer.proofPreview(request.proof())
+                request.integrity().platform(),
+                request.integrity().challengeId(),
+                logSanitizer.proofPreview(request.integrity().proof())
         );
         AuthenticatedUser user = authTokenResolver.requireBearer(authorization);
-        integrityService.verifyFreshIntegrity(
-                user.userId(),
-                request.platform(),
-                IntegrityAction.collectVoucher,
-                request.challengeId(),
-                request.proof(),
-                requestPayloadHasher.emptyBodyHash(),
-                "/me/vouchers/" + voucherId + "/collect",
-                "POST"
-        );
         log.info("Voucher collected userId={} voucherId={}", user.userId(), voucherId);
         return new CollectVoucherResponse(voucherId, "collected");
     }
