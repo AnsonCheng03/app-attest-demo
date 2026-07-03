@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   AppProvider,
   AppScreen,
@@ -29,8 +30,10 @@ function AppRoot() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppRoot />
-    </AppProvider>
+    <SafeAreaProvider>
+      <AppProvider>
+        <AppRoot />
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }
