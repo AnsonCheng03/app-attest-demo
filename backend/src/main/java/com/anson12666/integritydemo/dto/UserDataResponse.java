@@ -1,8 +1,8 @@
 package com.anson12666.integritydemo.dto;
 
-public record ProfileResponse(
+public record UserDataResponse(
         String userId,
         String username,
-        String tier
+        String notes
 ) {
 }

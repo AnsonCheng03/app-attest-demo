@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { requireOptionalNativeModule } from "expo-modules-core";
 import { Platform } from "react-native";
+import { mobileConfig, type IntegrityMode } from "./config";
 import { buildRequestHash } from "./hash";
 import type { PlatformName } from "./types";
 
@@ -60,8 +61,8 @@ export function isIntegrityModuleAvailable() {
   }
 }
 
-export function getIntegrityMode(): "mock" | "real" {
-  return process.env.EXPO_PUBLIC_INTEGRITY_MODE === "real" ? "real" : "mock";
+export function getIntegrityMode(): IntegrityMode {
+  return mobileConfig.integrityMode;
 }
 
 export function getNativePlatform(): PlatformName {
@@ -125,7 +126,7 @@ export async function resetIosKeyId() {
 export function formatIosProof(
   keyId: string,
   assertion: string,
-  mode: "mock" | "real",
+  mode: IntegrityMode,
 ) {
   const prefix = mode === "mock" ? "mock-ios-assertion" : "ios-app-attest";
   return `${prefix}:${keyId}:${assertion}`;
@@ -136,7 +137,7 @@ export async function createAndroidProof(
   path: string,
   bodyHash: string,
   challenge: string,
-  mode: "mock" | "real",
+  mode: IntegrityMode,
 ) {
   console.log("[integrity] createAndroidProof:start", {
     method,
@@ -185,7 +186,7 @@ export async function createAndroidProof(
 }
 
 export async function ensureIosKeyId(
-  mode: "mock" | "real" = getIntegrityMode(),
+  mode: IntegrityMode = getIntegrityMode(),
   options: { forceNew?: boolean } = {},
 ) {
   console.log("[integrity] ensureIosKeyId:start", {
@@ -250,7 +251,7 @@ export async function ensureIosKeyId(
 export async function createIosAttestationObject(
   challenge: string,
   keyId: string,
-  mode: "mock" | "real",
+  mode: IntegrityMode,
 ) {
   console.log("[integrity] createIosAttestationObject:start", {
     challengePreview: challenge.slice(0, 12),
@@ -311,7 +312,7 @@ export async function createIosAssertion(
   bodyHash: string,
   challenge: string,
   keyId: string,
-  mode: "mock" | "real",
+  mode: IntegrityMode,
 ) {
   console.log("[integrity] createIosAssertion:start", {
     method,

@@ -12,23 +12,21 @@ import type { AppScreenProps } from './types';
 export function AppScreen({
   actions,
   apiBaseUrl,
-  apiBaseUrlInput,
   challengeSummary,
   integrityMode,
   integrityModuleAvailable,
   loading,
   logGroups,
   nativePlatform,
+  notes,
   password,
   requestStatus,
   requireNativeRuntime,
-  setApiBaseUrlInput,
+  setNotes,
   setPassword,
   setUsername,
-  setVoucherId,
   token,
   username,
-  voucherId,
 }: AppScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -45,19 +43,15 @@ export function AppScreen({
           integrityMode={integrityMode}
           integrityModuleAvailable={integrityModuleAvailable}
         />
-        <ServerCard
-          apiBaseUrl={apiBaseUrl}
-          apiBaseUrlInput={apiBaseUrlInput}
-          setApiBaseUrlInput={setApiBaseUrlInput}
-        />
+        <ServerCard apiBaseUrl={apiBaseUrl} />
         <CredentialsCard
+          notes={notes}
           password={password}
+          setNotes={setNotes}
           setPassword={setPassword}
           setUsername={setUsername}
-          setVoucherId={setVoucherId}
           token={token}
           username={username}
-          voucherId={voucherId}
         />
         <ActionList actions={actions} nativePlatform={nativePlatform} />
         <ActivityLogCard

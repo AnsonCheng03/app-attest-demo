@@ -4,6 +4,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties(AppIntegrityProperties.class)
+@EnableConfigurationProperties({AppIntegrityProperties.class, AppAuthProperties.class})
 public class AppConfig {
 }

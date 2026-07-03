@@ -18,4 +18,8 @@ public class RequestPayloadHasher {
     public String emptyBodyHash() {
         return hashingService.sha256Base64("");
     }
+
+    public String notesBodyHash(String notes) {
+        return hashingService.sha256Base64("notes=" + notes);
+    }
 }

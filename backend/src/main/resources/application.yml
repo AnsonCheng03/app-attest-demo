@@ -1,16 +1,18 @@
 server:
-  address: 0.0.0.0
-  port: 8080
+  address: ${SERVER_ADDRESS:0.0.0.0}
+  port: ${SERVER_PORT:8080}
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:h2:file:./data/integrity-demo;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/integrity-demo;DB_CLOSE_ON_EXIT=FALSE}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
   sql:
     init:
-      mode: always
+      mode: ${SPRING_SQL_INIT_MODE:always}
 
 management:
   endpoints:
@@ -22,13 +24,16 @@ management:
       show-details: never
 
 app:
+  auth:
+    jwtSecret: ${APP_AUTH_JWT_SECRET:change-me-demo-jwt-secret}
+    tokenTtlSeconds: ${APP_AUTH_TOKEN_TTL_SECONDS:86400}
   integrity:
-    mode: real
+    mode: ${APP_INTEGRITY_MODE:mock}
     android:
-      packageName: com.anson12666.integritydemomobile
-      certificateDigest: CHANGE_ME
-      allowUnverifiedTokens: true
+      packageName: ${APP_INTEGRITY_ANDROID_PACKAGE_NAME:com.anson12666.integritydemomobile}
+      certificateDigest: ${APP_INTEGRITY_ANDROID_CERTIFICATE_DIGEST:CHANGE_ME}
+      allowUnverifiedTokens: ${APP_INTEGRITY_ANDROID_ALLOW_UNVERIFIED_TOKENS:true}
     ios:
-      bundleId: com.anson12666.integritydemomobile
-      teamId: 538FVU496F
-      appAttestEnvironment: development
+      bundleId: ${APP_INTEGRITY_IOS_BUNDLE_ID:com.anson12666.integritydemomobile}
+      teamId: ${APP_INTEGRITY_IOS_TEAM_ID:538FVU496F}
+      appAttestEnvironment: ${APP_INTEGRITY_IOS_APP_ATTEST_ENVIRONMENT:development}

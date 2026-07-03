@@ -54,7 +54,7 @@ public class IosAttestationRegistrationService {
                 logSanitizer.proofPreview(request.attestationObject())
         );
         integrityService.consumeIosRegistrationChallenge(request.challengeId(), request.challenge());
-        AppleAppAttestRegistrationVerifier verifier = "mock".equalsIgnoreCase(properties.getMode()) ? mockVerifier : realVerifier;
+        AppleAppAttestRegistrationVerifier verifier = properties.isMockMode() ? mockVerifier : realVerifier;
         log.info("Selected iOS registration verifier={}", verifier.getClass().getSimpleName());
         IosRegistrationVerificationResult result = verifier.verifyRegistration(
                 request.challenge(),

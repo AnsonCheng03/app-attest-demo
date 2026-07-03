@@ -1,28 +1,12 @@
 import React from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { styles } from './styles';
 
-export function ServerCard({
-  apiBaseUrl,
-  apiBaseUrlInput,
-  setApiBaseUrlInput,
-}: {
-  apiBaseUrl: string;
-  apiBaseUrlInput: string;
-  setApiBaseUrlInput: (value: string) => void;
-}) {
+export function ServerCard({ apiBaseUrl }: { apiBaseUrl: string }) {
   return (
     <View style={styles.card}>
       <Text style={styles.sectionTitle}>Server</Text>
-      <TextInput
-        value={apiBaseUrlInput}
-        onChangeText={setApiBaseUrlInput}
-        style={styles.input}
-        placeholder="http://192.168.1.10:8080"
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      <Text style={styles.helperText}>Active server: {apiBaseUrl}</Text>
+      <Text style={styles.helperText}>Configured server: {apiBaseUrl}</Text>
     </View>
   );
 }

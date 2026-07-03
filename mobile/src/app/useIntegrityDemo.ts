@@ -2,13 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useRef, useState } from 'react';
 import {
   checkHealth,
-  collectVoucher,
   createChallenge,
-  getProfile,
+  getData,
   login,
   registerIosKey,
+  saveNotes,
 } from '../api';
-import { collectVoucherPath, loginPath, sha256Base64 } from '../hash';
+import { mobileConfig } from '../config';
+import { loginPath, saveNotesPath, sha256Base64 } from '../hash';
 import {
   createAndroidProof,
   createIosAssertion,
@@ -20,7 +21,7 @@ import {
   isIntegrityModuleAvailable,
   resetIosKeyId,
 } from '../integrity';
-import type { CollectVoucherRequest, IntegrityAction, PlatformName } from '../types';
+import type { IntegrityAction, PlatformName, SaveNotesRequest } from '../types';
 import type { LogEntry, LogGroup } from './types';
 
 const inputStorageKey = 'integrity-demo-mobile-inputs';
@@ -83,14 +84,11 @@ function isRecoverableIosRegistrationError(error: unknown) {
 }
 
 export function useIntegrityDemo() {
-  const defaultApiBaseUrl =
-    process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
-  const requireNativeRuntime =
-    process.env.EXPO_PUBLIC_REQUIRE_NATIVE_RUNTIME === 'true';
+  const apiBaseUrl = mobileConfig.apiBaseUrl;
+  const requireNativeRuntime = mobileConfig.requireNativeRuntime;
   const [username, setUsername] = useState('demo');
   const [password, setPassword] = useState('password123');
-  const [voucherId, setVoucherId] = useState('voucher-001');
-  const [apiBaseUrlInput, setApiBaseUrlInput] = useState(defaultApiBaseUrl);
+  const [notes, setNotes] = useState('hello from integrity demo');
   const [token, setToken] = useState('');
   const [challengeSummary, setChallengeSummary] = useState('');
   const [logGroups, setLogGroups] = useState<LogGroup[]>([]);
@@ -98,7 +96,6 @@ export function useIntegrityDemo() {
   const [requestStatus, setRequestStatus] = useState('');
   const hasLoadedSavedInputs = useRef(false);
 
-  const apiBaseUrl = apiBaseUrlInput.trim() || defaultApiBaseUrl;
   const integrityMode = getIntegrityMode();
   const nativePlatform = getNativePlatform();
   const integrityModuleAvailable = isIntegrityModuleAvailable();
@@ -118,8 +115,7 @@ export function useIntegrityDemo() {
         const saved = JSON.parse(raw) as Partial<{
           username: string;
           password: string;
-          voucherId: string;
-          apiBaseUrlInput: string;
+          notes: string;
         }>;
 
         if (typeof saved.username === 'string') {
@@ -128,11 +124,8 @@ export function useIntegrityDemo() {
         if (typeof saved.password === 'string') {
           setPassword(saved.password);
         }
-        if (typeof saved.voucherId === 'string') {
-          setVoucherId(saved.voucherId);
-        }
-        if (typeof saved.apiBaseUrlInput === 'string') {
-          setApiBaseUrlInput(saved.apiBaseUrlInput);
+        if (typeof saved.notes === 'string') {
+          setNotes(saved.notes);
         }
       } catch (error) {
         console.warn('Failed to load saved mobile inputs', error);
@@ -160,13 +153,12 @@ export function useIntegrityDemo() {
       JSON.stringify({
         username,
         password,
-        voucherId,
-        apiBaseUrlInput,
+        notes,
       })
     ).catch((error) => {
       console.warn('Failed to save mobile inputs', error);
     });
-  }, [apiBaseUrlInput, password, username, voucherId]);
+  }, [notes, password, username]);
 
   const appendLogEntry = (groupId: string, entry: Omit<LogEntry, 'id'>) => {
     setLogGroups((current) =>
@@ -571,22 +563,22 @@ export function useIntegrityDemo() {
       );
     });
 
-  const onCollectVoucher = () =>
+  const onSaveNotes = () =>
     withLoading(
-      'Collect voucher',
+      'Save notes',
       nativePlatform === 'ios'
         ? 'App Attest Protected Request'
         : 'Play Integrity Protected Request',
       async (report) => {
         if (!token) {
-          throw new Error('Login first before collecting a voucher.');
+          throw new Error('Login first before saving notes.');
         }
 
         const actionPlatform: PlatformName =
           nativePlatform === 'ios' ? 'ios' : 'android';
         const challengeRequest = {
           platform: actionPlatform,
-          action: 'collectVoucher' as const,
+          action: 'saveNotes' as const,
         };
         report(
           '1. Ask backend for a fresh protected-request challenge',
@@ -599,24 +591,25 @@ export function useIntegrityDemo() {
         const challenge = await createChallenge(
           apiBaseUrl,
           actionPlatform,
-          'collectVoucher'
+          'saveNotes'
         );
-        const path = collectVoucherPath(voucherId);
+        const path = saveNotesPath;
         report(
           '2. Backend returned the protected-request challenge',
           formatLogIO(challengeRequest, challenge)
         );
-        const emptyBodyHash = await sha256Base64('');
+        const notesBody = `notes=${notes}`;
+        const notesBodyHash = await sha256Base64(notesBody);
         report(
           '3. Build request-bound hash inputs',
           formatLogIO(
             {
               function: 'sha256Base64',
-              input: '',
+              input: notesBody,
             },
             {
               path,
-              bodyHash: emptyBodyHash,
+              bodyHash: notesBodyHash,
             }
           )
         );
@@ -636,7 +629,7 @@ export function useIntegrityDemo() {
             function: 'createIosAssertion',
             method: 'POST',
             path,
-            bodyHash: emptyBodyHash,
+            bodyHash: notesBodyHash,
             challenge: challenge.challenge,
             keyId,
             integrityMode,
@@ -644,7 +637,7 @@ export function useIntegrityDemo() {
           const assertion = await createIosAssertion(
             'POST',
             path,
-            emptyBodyHash,
+            notesBodyHash,
             challenge.challenge,
             keyId,
             integrityMode
@@ -669,14 +662,14 @@ export function useIntegrityDemo() {
             function: 'createAndroidProof',
             method: 'POST',
             path,
-            bodyHash: emptyBodyHash,
+            bodyHash: notesBodyHash,
             challenge: challenge.challenge,
             integrityMode,
           };
           proof = await createAndroidProof(
             'POST',
             path,
-            emptyBodyHash,
+            notesBodyHash,
             challenge.challenge,
             integrityMode
           );
@@ -686,56 +679,51 @@ export function useIntegrityDemo() {
           );
         }
 
-        const collectRequest: CollectVoucherRequest = {
+        const saveNotesRequest: SaveNotesRequest = {
+          notes,
           platform: actionPlatform,
           challengeId: challenge.challengeId,
           proof,
         };
         report(
           actionPlatform === 'ios'
-            ? '8. Send voucher request + assertion to backend'
-            : '5. Send voucher request + integrity proof to backend',
+            ? '8. Send save-notes request + assertion to backend'
+            : '5. Send save-notes request + integrity proof to backend',
           formatLogIO({
-            function: 'collectVoucher',
+            function: 'saveNotes',
             baseUrl: apiBaseUrl,
             token,
-            voucherId,
-            request: collectRequest,
+            request: saveNotesRequest,
           })
         );
-        const response = await collectVoucher(
-          apiBaseUrl,
-          token,
-          voucherId,
-          collectRequest
-        );
+        const response = await saveNotes(apiBaseUrl, token, saveNotesRequest);
         report(
           actionPlatform === 'ios'
             ? '9. Backend accepted the protected request'
             : '6. Backend accepted the protected request',
-          formatLogIO(collectRequest, response),
+          formatLogIO(saveNotesRequest, response),
           'success'
         );
       }
     );
 
-  const onGetProfile = () =>
-    withLoading('Get profile', 'Authenticated Profile Read', async (report) => {
+  const onGetData = () =>
+    withLoading('Get data', 'Authenticated Data Read', async (report) => {
       if (!token) {
-        throw new Error('Login first before requesting the profile.');
+        throw new Error('Login first before requesting data.');
       }
 
       report(
-        '1. Send authenticated profile request',
+        '1. Send authenticated data request',
         formatLogIO({
-          function: 'getProfile',
+          function: 'getData',
           baseUrl: apiBaseUrl,
           token,
         })
       );
       report(
-        '2. Backend returned the profile',
-        formatLogIO({ token }, await getProfile(apiBaseUrl, token)),
+        '2. Backend returned the data',
+        formatLogIO({ token }, await getData(apiBaseUrl, token)),
         'success'
       );
     });
@@ -761,14 +749,13 @@ export function useIntegrityDemo() {
     actions: {
       onAndroidLogin,
       onCheckHealth,
-      onCollectVoucher,
+      onGetData,
       onGetChallenge,
-      onGetProfile,
       onIosLogin,
       onRegisterIosKey,
+      onSaveNotes,
     },
     apiBaseUrl,
-    apiBaseUrlInput,
     challengeSummary,
     integrityMode,
     integrityModuleAvailable,
@@ -776,15 +763,14 @@ export function useIntegrityDemo() {
     logGroups,
     nativePlatform,
     nativeRuntimeRequiredButMissing,
+    notes,
     password,
     requestStatus,
     requireNativeRuntime,
-    setApiBaseUrlInput,
+    setNotes,
     setPassword,
     setUsername,
-    setVoucherId,
     token,
     username,
-    voucherId,
   };
 }

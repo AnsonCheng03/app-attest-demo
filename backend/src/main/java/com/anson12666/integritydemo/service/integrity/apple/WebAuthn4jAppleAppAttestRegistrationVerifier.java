@@ -72,7 +72,7 @@ public class WebAuthn4jAppleAppAttestRegistrationVerifier implements AppleAppAtt
     }
 
     private boolean isProductionEnvironment() {
-        return !"development".equalsIgnoreCase(properties.getIos().getAppAttestEnvironment());
+        return properties.getIos().isProduction();
     }
 
     private byte[] decodeBase64(String value, String fieldName) {

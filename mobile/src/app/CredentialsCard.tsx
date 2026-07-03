@@ -3,21 +3,21 @@ import { Text, TextInput, View } from 'react-native';
 import { styles } from './styles';
 
 export function CredentialsCard({
+  notes,
   password,
   setPassword,
+  setNotes,
   setUsername,
-  setVoucherId,
   token,
   username,
-  voucherId,
 }: {
+  notes: string;
   password: string;
   setPassword: (value: string) => void;
+  setNotes: (value: string) => void;
   setUsername: (value: string) => void;
-  setVoucherId: (value: string) => void;
   token: string;
   username: string;
-  voucherId: string;
 }) {
   return (
     <View style={styles.card}>
@@ -36,10 +36,10 @@ export function CredentialsCard({
         secureTextEntry
       />
       <TextInput
-        value={voucherId}
-        onChangeText={setVoucherId}
+        value={notes}
+        onChangeText={setNotes}
         style={styles.input}
-        placeholder="Voucher ID"
+        placeholder="Notes"
       />
       <Text style={styles.meta}>Bearer token: {token || 'not logged in'}</Text>
     </View>

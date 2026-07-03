@@ -5,16 +5,20 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "app.integrity")
 public class AppIntegrityProperties {
 
-    private String mode = "mock";
+    private IntegrityMode mode = IntegrityMode.mock;
     private final Android android = new Android();
     private final Ios ios = new Ios();
 
-    public String getMode() {
+    public IntegrityMode getMode() {
         return mode;
     }
 
-    public void setMode(String mode) {
+    public void setMode(IntegrityMode mode) {
         this.mode = mode;
+    }
+
+    public boolean isMockMode() {
+        return mode == IntegrityMode.mock;
     }
 
     public Android getAndroid() {
@@ -58,7 +62,7 @@ public class AppIntegrityProperties {
     public static class Ios {
         private String bundleId;
         private String teamId;
-        private String appAttestEnvironment = "development";
+        private AppAttestEnvironment appAttestEnvironment = AppAttestEnvironment.development;
 
         public String getBundleId() {
             return bundleId;
@@ -76,12 +80,16 @@ public class AppIntegrityProperties {
             this.teamId = teamId;
         }
 
-        public String getAppAttestEnvironment() {
+        public AppAttestEnvironment getAppAttestEnvironment() {
             return appAttestEnvironment;
         }
 
-        public void setAppAttestEnvironment(String appAttestEnvironment) {
+        public void setAppAttestEnvironment(AppAttestEnvironment appAttestEnvironment) {
             this.appAttestEnvironment = appAttestEnvironment;
+        }
+
+        public boolean isProduction() {
+            return appAttestEnvironment == AppAttestEnvironment.production;
         }
     }
 }

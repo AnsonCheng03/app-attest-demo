@@ -27,7 +27,7 @@ public class AppleAppAttestVerifier implements AppIntegrityVerifier {
 
     @Override
     public IntegrityVerificationResult verify(IntegrityVerificationRequest request) {
-        if ("mock".equalsIgnoreCase(properties.getMode())) {
+        if (properties.isMockMode()) {
             return mockVerifier.verify(request);
         }
         return realVerifier.verify(request);

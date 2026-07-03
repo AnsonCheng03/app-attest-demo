@@ -40,8 +40,8 @@ export function ActionList({
         label="Check Backend Health"
         onPress={actions.onCheckHealth}
       />
-      <ActionButton label="Collect Voucher" onPress={actions.onCollectVoucher} />
-      <ActionButton label="Get Profile" onPress={actions.onGetProfile} />
+      <ActionButton label="Save Notes" onPress={actions.onSaveNotes} />
+      <ActionButton label="Get Data" onPress={actions.onGetData} />
     </View>
   );
 }

@@ -75,27 +75,16 @@ This is how business APIs stay mostly platform-agnostic.
 ## Which Endpoints Require Integrity
 
 - `POST /auth/login`: requires fresh integrity
-- `POST /me/vouchers/{voucherId}/collect`: requires fresh integrity
-- `GET /me/profile`: requires Authorization only, no fresh integrity
+- `POST /me/data/save-notes`: requires fresh integrity
+- `GET /me/data`: requires Authorization only, no fresh integrity
 
 This demo intentionally does not apply integrity checks to every low-risk GET endpoint. Real systems should scope integrity to higher-risk operations instead of making every read call expensive.
 
 ## Mock Mode vs Real Mode
 
-Backend configuration in [backend/src/main/resources/application.yml](/Users/ansoncheng/Downloads/app-attest-demo/backend/src/main/resources/application.yml:1):
+Backend configuration is now env-driven through [backend/.env.example](/Users/ansoncheng/Downloads/app-attest-demo/backend/.env.example:1) and enum-backed Spring properties.
 
-```yml
-app:
-  integrity:
-    mode: mock
-```
-
-Mobile configuration uses Expo public env vars:
-
-```bash
-EXPO_PUBLIC_API_BASE_URL=http://localhost:8080
-EXPO_PUBLIC_INTEGRITY_MODE=mock
-```
+Mobile configuration is now env-driven through [mobile/.env.example](/Users/ansoncheng/Downloads/app-attest-demo/mobile/.env.example:1).
 
 Switching to `real` activates placeholder classes where the real Google Play Integrity and Apple App Attest integrations should be added.
 
@@ -114,7 +103,7 @@ This means the proof is bound to:
 - the request body content
 - the server-issued one-time challenge
 
-That helps prevent replay and request swapping. A token/assertion issued for `/auth/login` should not verify against `/me/vouchers/.../collect`.
+That helps prevent replay and request swapping. A token/assertion issued for `/auth/login` should not verify against `/me/data/save-notes`.
 
 ## Running The Backend
 
@@ -133,6 +122,7 @@ cd backend
 
 The backend runs on `http://localhost:8080`.
 The wrapper downloads Maven automatically, so a separate `mvn` install is not required.
+Runtime settings such as integrity mode, bundle id, team id, and datasource settings are read from `backend/.env`.
 
 ## Running The Expo App
 
@@ -147,8 +137,10 @@ Commands:
 ```bash
 cd mobile
 npm install
-EXPO_PUBLIC_API_BASE_URL=http://localhost:8080 EXPO_PUBLIC_INTEGRITY_MODE=mock npm start
+npm start
 ```
+
+The Expo app reads `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_INTEGRITY_MODE`, and `EXPO_PUBLIC_REQUIRE_NATIVE_RUNTIME` from `mobile/.env`.
 
 Then open the app in:
 
@@ -164,8 +156,8 @@ The mobile app includes buttons for:
 - `Register iOS App Attest Key`
 - `Android Login with Play Integrity`
 - `iOS Login with App Attest`
-- `Collect Voucher`
-- `Get Profile`
+- `Save Notes`
+- `Get Data`
 
 In mock mode:
 
@@ -216,31 +208,32 @@ curl -s http://localhost:8080/integrity/ios/register \
   }'
 ```
 
-### 4. Collect a voucher with fresh integrity
+### 4. Save notes with fresh integrity
 
 ```bash
-curl -s http://localhost:8080/me/vouchers/voucher-001/collect \
+curl -s http://localhost:8080/me/data/save-notes \
   -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer demo-token-user-123' \
+  -H 'Authorization: Bearer JWT_ACCESS_TOKEN' \
   -d '{
+    "notes":"hello from demo",
     "platform":"android",
     "challengeId":"CHALLENGE_ID",
     "proof":"mock-play-integrity:REQUEST_HASH"
   }'
 ```
 
-### 5. Get profile without fresh integrity
+### 5. Get data without fresh integrity
 
 ```bash
-curl -s http://localhost:8080/me/profile \
-  -H 'Authorization: Bearer demo-token-user-123'
+curl -s http://localhost:8080/me/data \
+  -H 'Authorization: Bearer JWT_ACCESS_TOKEN'
 ```
 
 ## Real Integration TODOs
 
 ### Google Play Integrity
 
-See [backend/src/main/java/com/example/integritydemo/service/RealGooglePlayIntegrityVerifier.java](/Users/ansoncheng/Downloads/app-attest-demo/backend/src/main/java/com/example/integritydemo/service/RealGooglePlayIntegrityVerifier.java:1).
+See [RealGooglePlayIntegrityVerifier.java](/Users/ansoncheng/Downloads/app-attest-demo/backend/src/main/java/com/anson12666/integritydemo/service/integrity/google/RealGooglePlayIntegrityVerifier.java:1).
 
 Replace the placeholder with:
 
@@ -253,7 +246,7 @@ Replace the placeholder with:
 
 ### Apple App Attest registration
 
-See [backend/src/main/java/com/example/integritydemo/service/WebAuthn4jAppleAppAttestRegistrationVerifier.java](/Users/ansoncheng/Downloads/app-attest-demo/backend/src/main/java/com/example/integritydemo/service/WebAuthn4jAppleAppAttestRegistrationVerifier.java:1).
+See [WebAuthn4jAppleAppAttestRegistrationVerifier.java](/Users/ansoncheng/Downloads/app-attest-demo/backend/src/main/java/com/anson12666/integritydemo/service/integrity/apple/WebAuthn4jAppleAppAttestRegistrationVerifier.java:1).
 
 Replace the placeholder with WebAuthn4J App Attest logic to:
 
@@ -264,7 +257,7 @@ Replace the placeholder with WebAuthn4J App Attest logic to:
 
 ### Apple App Attest assertions
 
-See [backend/src/main/java/com/example/integritydemo/service/RealAppleAppAttestVerifier.java](/Users/ansoncheng/Downloads/app-attest-demo/backend/src/main/java/com/example/integritydemo/service/RealAppleAppAttestVerifier.java:1).
+See [RealAppleAppAttestVerifier.java](/Users/ansoncheng/Downloads/app-attest-demo/backend/src/main/java/com/anson12666/integritydemo/service/integrity/apple/RealAppleAppAttestVerifier.java:1).
 
 Replace the placeholder with logic to:
 
@@ -277,8 +270,8 @@ Replace the placeholder with logic to:
 ## Limitations Of This Demo
 
 - In-memory repositories only
-- Hardcoded demo user
-- Fake bearer token instead of real JWT
+- Demo accepts any username/password
+- Simple local JWT signing instead of a full auth system
 - Mock verification formats are intentionally simple
 - No persistence, device management, revocation, or anti-abuse controls
 - Real Expo native integrity APIs may require a development build, not Expo Go

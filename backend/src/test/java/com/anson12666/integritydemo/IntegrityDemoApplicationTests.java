@@ -19,6 +19,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class IntegrityDemoApplicationTests {
 
+    private static final String DEMO_USERNAME = "alice";
+    private static final String DEMO_PASSWORD = "super-secret";
+    private static final String DEMO_NOTES = "hello from alice";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -30,25 +34,30 @@ class IntegrityDemoApplicationTests {
         JsonNode challenge = createChallenge("android", "login");
         String challengeId = challenge.get("challengeId").asText();
         String challengeValue = challenge.get("challenge").asText();
-        String proof = "mock-play-integrity:" + requestHash("POST", "/auth/login", loginBodyHash(), challengeValue);
+        String proof = "mock-play-integrity:" + requestHash("POST", "/auth/login", loginBodyHash(DEMO_USERNAME, DEMO_PASSWORD), challengeValue);
 
         String loginBody = """
                 {
-                  "username": "demo",
-                  "password": "password123",
+                  "username": "%s",
+                  "password": "%s",
                   "integrity": {
                     "platform": "android",
                     "challengeId": "%s",
                     "proof": "%s"
                   }
                 }
-                """.formatted(challengeId, proof);
+                """.formatted(DEMO_USERNAME, DEMO_PASSWORD, challengeId, proof);
 
-        mockMvc.perform(post("/auth/login")
+        String response = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("demo-token-user-123"));
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(objectMapper.readTree(response).get("accessToken").asText()).isNotBlank();
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -58,7 +67,7 @@ class IntegrityDemoApplicationTests {
     }
 
     @Test
-    void iosRegistrationThenLoginAndVoucherCollectionWorkInMockMode() throws Exception {
+    void iosRegistrationThenLoginAndSaveNotesWorkInMockMode() throws Exception {
         JsonNode registrationChallenge = createChallenge("ios", "login");
         String registrationChallengeId = registrationChallenge.get("challengeId").asText();
         String registrationChallengeValue = registrationChallenge.get("challenge").asText();
@@ -82,20 +91,20 @@ class IntegrityDemoApplicationTests {
         String loginChallengeId = loginChallenge.get("challengeId").asText();
         String loginChallengeValue = loginChallenge.get("challenge").asText();
         String loginProof = "mock-ios-assertion:mock-ios-key:"
-                + requestHash("POST", "/auth/login", loginBodyHash(), loginChallengeValue)
+                + requestHash("POST", "/auth/login", loginBodyHash(DEMO_USERNAME, DEMO_PASSWORD), loginChallengeValue)
                 + "|1";
 
         String loginBody = """
                 {
-                  "username": "demo",
-                  "password": "password123",
+                  "username": "%s",
+                  "password": "%s",
                   "integrity": {
                     "platform": "ios",
                     "challengeId": "%s",
                     "proof": "%s"
                   }
                 }
-                """.formatted(loginChallengeId, loginProof);
+                """.formatted(DEMO_USERNAME, DEMO_PASSWORD, loginChallengeId, loginProof);
 
         String loginResponse = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -106,53 +115,55 @@ class IntegrityDemoApplicationTests {
                 .getContentAsString();
 
         String token = objectMapper.readTree(loginResponse).get("accessToken").asText();
-        assertThat(token).isEqualTo("demo-token-user-123");
+        assertThat(token).isNotBlank();
 
-        JsonNode collectChallenge = createChallenge("ios", "collectVoucher");
-        String collectChallengeId = collectChallenge.get("challengeId").asText();
-        String collectChallengeValue = collectChallenge.get("challenge").asText();
+        JsonNode saveNotesChallenge = createChallenge("ios", "saveNotes");
+        String saveNotesChallengeId = saveNotesChallenge.get("challengeId").asText();
+        String saveNotesChallengeValue = saveNotesChallenge.get("challenge").asText();
         String collectProof = "mock-ios-assertion:mock-ios-key:"
-                + requestHash("POST", "/me/vouchers/voucher-001/collect", emptyBodyHash(), collectChallengeValue)
+                + requestHash("POST", "/me/data/save-notes", notesBodyHash(DEMO_NOTES), saveNotesChallengeValue)
                 + "|2";
 
-        String collectBody = """
+        String saveNotesBody = """
                 {
+                  "notes": "%s",
                   "platform": "ios",
                   "challengeId": "%s",
                   "proof": "%s"
                 }
-                """.formatted(collectChallengeId, collectProof);
+                """.formatted(DEMO_NOTES, saveNotesChallengeId, collectProof);
 
-        mockMvc.perform(post("/me/vouchers/voucher-001/collect")
+        mockMvc.perform(post("/me/data/save-notes")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(collectBody))
+                        .content(saveNotesBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("collected"));
+                .andExpect(jsonPath("$.status").value("saved"))
+                .andExpect(jsonPath("$.notes").value(DEMO_NOTES));
     }
 
     @Test
-    void profileRequiresAuthorizationButNotFreshIntegrity() throws Exception {
-        mockMvc.perform(get("/me/profile")
+    void getDataRequiresAuthorizationButNotFreshIntegrity() throws Exception {
+        mockMvc.perform(get("/me/data")
                         .header("Authorization", "Bearer definitely-invalid"))
                 .andExpect(status().isUnauthorized());
 
         JsonNode challenge = createChallenge("android", "login");
         String challengeId = challenge.get("challengeId").asText();
         String challengeValue = challenge.get("challenge").asText();
-        String proof = "mock-play-integrity:" + requestHash("POST", "/auth/login", loginBodyHash(), challengeValue);
+        String proof = "mock-play-integrity:" + requestHash("POST", "/auth/login", loginBodyHash(DEMO_USERNAME, DEMO_PASSWORD), challengeValue);
 
         String loginBody = """
                 {
-                  "username": "demo",
-                  "password": "password123",
+                  "username": "%s",
+                  "password": "%s",
                   "integrity": {
                     "platform": "android",
                     "challengeId": "%s",
                     "proof": "%s"
                   }
                 }
-                """.formatted(challengeId, proof);
+                """.formatted(DEMO_USERNAME, DEMO_PASSWORD, challengeId, proof);
 
         String loginResponse = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -164,11 +175,11 @@ class IntegrityDemoApplicationTests {
 
         String token = objectMapper.readTree(loginResponse).get("accessToken").asText();
 
-        mockMvc.perform(get("/me/profile")
+        mockMvc.perform(get("/me/data")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("demo"))
-                .andExpect(jsonPath("$.tier").value("gold"));
+                .andExpect(jsonPath("$.username").value(DEMO_USERNAME))
+                .andExpect(jsonPath("$.notes").value(""));
     }
 
     private JsonNode createChallenge(String platform, String action) throws Exception {
@@ -194,12 +205,12 @@ class IntegrityDemoApplicationTests {
         return sha256Base64(method + "\n" + path + "\n" + bodyHash + "\n" + challenge);
     }
 
-    private String loginBodyHash() {
-        return sha256Base64("username=demo\npassword=password123");
+    private String loginBodyHash(String username, String password) {
+        return sha256Base64("username=" + username + "\npassword=" + password);
     }
 
-    private String emptyBodyHash() {
-        return sha256Base64("");
+    private String notesBodyHash(String notes) {
+        return sha256Base64("notes=" + notes);
     }
 
     private String sha256Base64(String value) {

@@ -1,7 +1,5 @@
 import {
   ChallengeResponse,
-  CollectVoucherRequest,
-  CollectVoucherResponse,
   HealthResponse,
   IntegrityAction,
   IosRegisterRequest,
@@ -9,7 +7,9 @@ import {
   LoginRequest,
   LoginResponse,
   PlatformName,
-  ProfileResponse,
+  SaveNotesRequest,
+  SaveNotesResponse,
+  UserDataResponse,
 } from './types';
 
 async function request<T>(
@@ -85,27 +85,22 @@ export function login(baseUrl: string, body: LoginRequest) {
   });
 }
 
-export function collectVoucher(
+export function saveNotes(
   baseUrl: string,
   token: string,
-  voucherId: string,
-  body: CollectVoucherRequest
+  body: SaveNotesRequest
 ) {
-  return request<CollectVoucherResponse>(
-    baseUrl,
-    `/me/vouchers/${voucherId}/collect`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  return request<SaveNotesResponse>(baseUrl, '/me/data/save-notes', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
 }
 
-export function getProfile(baseUrl: string, token: string) {
-  return request<ProfileResponse>(baseUrl, '/me/profile', {
+export function getData(baseUrl: string, token: string) {
+  return request<UserDataResponse>(baseUrl, '/me/data', {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,

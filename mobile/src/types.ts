@@ -1,5 +1,5 @@
 export type PlatformName = 'android' | 'ios';
-export type IntegrityAction = 'login' | 'collectVoucher' | 'useWalletCode';
+export type IntegrityAction = 'login' | 'saveNotes' | 'useWalletCode';
 
 export interface ChallengeResponse {
   challengeId: string;
@@ -23,21 +23,22 @@ export interface LoginResponse {
   userId: string;
 }
 
-export interface CollectVoucherRequest {
+export interface SaveNotesRequest {
+  notes: string;
   platform: PlatformName;
   challengeId: string;
   proof: string;
 }
 
-export interface CollectVoucherResponse {
-  voucherId: string;
+export interface SaveNotesResponse {
   status: string;
+  notes: string;
 }
 
-export interface ProfileResponse {
+export interface UserDataResponse {
   userId: string;
   username: string;
-  tier: string;
+  notes: string;
 }
 
 export interface HealthResponse {

@@ -2,9 +2,7 @@ import * as Crypto from 'expo-crypto';
 
 export const loginPath = '/auth/login';
 
-export function collectVoucherPath(voucherId: string) {
-  return `/me/vouchers/${voucherId}/collect`;
-}
+export const saveNotesPath = '/me/data/save-notes';
 
 export async function sha256Base64(input: string) {
   return Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, input, {
