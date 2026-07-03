@@ -1,5 +1,5 @@
 import React, { createContext, useContext } from 'react';
-import { useIntegrityDemo } from '../hooks/useIntegrityDemo';
+import { useIntegrityDemo } from '../hooks/state/useIntegrityDemo';
 
 type AppContextValue = ReturnType<typeof useIntegrityDemo>;
 
