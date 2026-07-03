@@ -1,24 +1,19 @@
 import React from 'react';
 import { Text, TextInput, View } from 'react-native';
+import { useAppContext } from './AppContext';
 import { styles } from './styles';
 
-export function CredentialsCard({
-  notes,
-  password,
-  setPassword,
-  setNotes,
-  setUsername,
-  token,
-  username,
-}: {
-  notes: string;
-  password: string;
-  setPassword: (value: string) => void;
-  setNotes: (value: string) => void;
-  setUsername: (value: string) => void;
-  token: string;
-  username: string;
-}) {
+export function CredentialsCard() {
+  const {
+    notes,
+    password,
+    setPassword,
+    setNotes,
+    setUsername,
+    token,
+    username,
+  } = useAppContext();
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardEyebrow}>Identity</Text>

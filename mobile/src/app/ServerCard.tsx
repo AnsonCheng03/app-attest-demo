@@ -1,8 +1,11 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { useAppContext } from './AppContext';
 import { styles } from './styles';
 
-export function ServerCard({ apiBaseUrl }: { apiBaseUrl: string }) {
+export function ServerCard() {
+  const { apiBaseUrl } = useAppContext();
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardEyebrow}>Backend</Text>

@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { useAppContext } from './AppContext';
 import { styles } from './styles';
-import type { LogGroup } from './types';
 
-export function ActivityLogCard({
-  loading,
-  logGroups,
-  requestStatus,
-}: {
-  loading: boolean;
-  logGroups: LogGroup[];
-  requestStatus: string;
-}) {
+export function ActivityLogCard() {
+  const { loading, logGroups, requestStatus } = useAppContext();
   const [selectedGroupIndex, setSelectedGroupIndex] = useState(0);
 
   useEffect(() => {

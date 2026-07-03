@@ -8,58 +8,17 @@ import { RuntimeStatusCard } from './RuntimeStatusCard';
 import { RuntimeSummary } from './RuntimeSummary';
 import { ServerCard } from './ServerCard';
 import { styles } from './styles';
-import type { AppScreenProps } from './types';
 
-export function AppScreen({
-  actions,
-  apiBaseUrl,
-  challengeSummary,
-  integrityMode,
-  integrityModuleAvailable,
-  loading,
-  logGroups,
-  nativePlatform,
-  notes,
-  password,
-  requestStatus,
-  requireNativeRuntime,
-  setNotes,
-  setPassword,
-  setUsername,
-  token,
-  username,
-}: AppScreenProps) {
+export function AppScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView contentContainerStyle={styles.container}>
-        <RuntimeSummary
-          apiBaseUrl={apiBaseUrl}
-          challengeSummary={challengeSummary}
-          integrityMode={integrityMode}
-          integrityModuleAvailable={integrityModuleAvailable}
-          nativePlatform={nativePlatform}
-          requireNativeRuntime={requireNativeRuntime}
-        />
-        <RuntimeStatusCard
-          integrityMode={integrityMode}
-          integrityModuleAvailable={integrityModuleAvailable}
-        />
-        <ServerCard apiBaseUrl={apiBaseUrl} />
-        <CredentialsCard
-          notes={notes}
-          password={password}
-          setNotes={setNotes}
-          setPassword={setPassword}
-          setUsername={setUsername}
-          token={token}
-          username={username}
-        />
-        <ActionList actions={actions} nativePlatform={nativePlatform} />
-        <ActivityLogCard
-          loading={loading}
-          logGroups={logGroups}
-          requestStatus={requestStatus}
-        />
+        <RuntimeSummary />
+        <RuntimeStatusCard />
+        <ServerCard />
+        <CredentialsCard />
+        <ActionList />
+        <ActivityLogCard />
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>

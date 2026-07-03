@@ -1,16 +1,20 @@
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { AppScreen, BlockedRuntimeScreen } from './src/app';
-import { useIntegrityDemo } from './src/app/useIntegrityDemo';
+import {
+  AppProvider,
+  AppScreen,
+  BlockedRuntimeScreen,
+  useAppContext,
+} from './src/app';
 
-export default function App() {
-  const app = useIntegrityDemo();
+function AppRoot() {
+  const app = useAppContext();
 
   if (app.nativeRuntimeRequiredButMissing) {
     return (
       <>
         <StatusBar style="dark" />
-        <BlockedRuntimeScreen apiBaseUrl={app.apiBaseUrl} />
+        <BlockedRuntimeScreen />
       </>
     );
   }
@@ -18,7 +22,15 @@ export default function App() {
   return (
     <>
       <StatusBar style="dark" />
-      <AppScreen {...app} />
+      <AppScreen />
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <AppRoot />
+    </AppProvider>
   );
 }

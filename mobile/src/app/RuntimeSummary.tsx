@@ -1,16 +1,18 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { useAppContext } from './AppContext';
 import { styles } from './styles';
-import type { RuntimeSummaryProps } from './types';
 
-export function RuntimeSummary({
-  apiBaseUrl,
-  challengeSummary,
-  integrityMode,
-  integrityModuleAvailable,
-  nativePlatform,
-  requireNativeRuntime,
-}: RuntimeSummaryProps) {
+export function RuntimeSummary() {
+  const {
+    apiBaseUrl,
+    challengeSummary,
+    integrityMode,
+    integrityModuleAvailable,
+    nativePlatform,
+    requireNativeRuntime,
+  } = useAppContext();
+
   return (
     <View style={styles.hero}>
       <View style={styles.heroOrbLarge} />

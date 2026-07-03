@@ -1,3 +1,4 @@
+export { AppProvider, useAppContext } from './AppContext';
 export { ActionList } from './ActionList';
 export { ActivityLogCard } from './ActivityLogCard';
 export { AppScreen } from './AppScreen';

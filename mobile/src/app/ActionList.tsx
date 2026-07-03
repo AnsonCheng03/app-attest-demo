@@ -1,17 +1,12 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import type { PlatformName } from '../types';
+import { useAppContext } from './AppContext';
 import { ActionButton } from './ActionButton';
 import { styles } from './styles';
-import type { AppActions } from './types';
 
-export function ActionList({
-  actions,
-  nativePlatform,
-}: {
-  actions: AppActions;
-  nativePlatform: PlatformName;
-}) {
+export function ActionList() {
+  const { actions, nativePlatform } = useAppContext();
+
   return (
     <View style={styles.card}>
       <Text style={styles.cardEyebrow}>Actions</Text>
