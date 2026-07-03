@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
-import { useAppContext } from './AppContext';
-import { styles } from './styles';
+import { useAppContext } from '../context/AppContext';
+import { styles } from '../theme/styles';
 
 export function ActivityLogCard() {
   const { loading, logGroups, requestStatus } = useAppContext();

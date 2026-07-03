@@ -1,9 +1,9 @@
-export { AppProvider, useAppContext } from './AppContext';
-export { ActionList } from './ActionList';
-export { ActivityLogCard } from './ActivityLogCard';
-export { AppScreen } from './AppScreen';
-export { BlockedRuntimeScreen } from './BlockedRuntimeScreen';
-export { CredentialsCard } from './CredentialsCard';
-export { RuntimeStatusCard } from './RuntimeStatusCard';
-export { RuntimeSummary } from './RuntimeSummary';
-export { ServerCard } from './ServerCard';
+export { AppProvider, useAppContext } from './context/AppContext';
+export { ActionList } from './components/ActionList';
+export { ActivityLogCard } from './components/ActivityLogCard';
+export { CredentialsCard } from './components/CredentialsCard';
+export { RuntimeStatusCard } from './components/RuntimeStatusCard';
+export { RuntimeSummary } from './components/RuntimeSummary';
+export { ServerCard } from './components/ServerCard';
+export { AppScreen } from './screens/AppScreen';
+export { BlockedRuntimeScreen } from './screens/BlockedRuntimeScreen';

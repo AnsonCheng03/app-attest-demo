@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, TextInput, View } from 'react-native';
-import { useAppContext } from './AppContext';
-import { styles } from './styles';
+import { useAppContext } from '../context/AppContext';
+import { styles } from '../theme/styles';
 
 export function CredentialsCard() {
   const {
@@ -28,7 +28,7 @@ export function CredentialsCard() {
         onChangeText={setUsername}
         style={styles.input}
         placeholder="Username"
-        placeholderTextColor="#7d8798"
+        placeholderTextColor="#86a8c3"
       />
       <Text style={styles.inputLabel}>Password</Text>
       <TextInput
@@ -36,7 +36,7 @@ export function CredentialsCard() {
         onChangeText={setPassword}
         style={styles.input}
         placeholder="Password"
-        placeholderTextColor="#7d8798"
+        placeholderTextColor="#86a8c3"
         secureTextEntry
       />
       <Text style={styles.inputLabel}>Notes</Text>
@@ -45,7 +45,7 @@ export function CredentialsCard() {
         onChangeText={setNotes}
         style={[styles.input, styles.notesInput]}
         placeholder="Notes"
-        placeholderTextColor="#7d8798"
+        placeholderTextColor="#86a8c3"
         multiline
         textAlignVertical="top"
       />

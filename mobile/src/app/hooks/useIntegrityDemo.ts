@@ -7,9 +7,9 @@ import {
   login,
   registerIosKey,
   saveNotes,
-} from '../api';
-import { mobileConfig } from '../config';
-import { loginPath, saveNotesPath, sha256Base64 } from '../hash';
+} from '../../api';
+import { mobileConfig } from '../../config';
+import { loginPath, saveNotesPath, sha256Base64 } from '../../hash';
 import {
   createAndroidProof,
   createIosAssertion,
@@ -20,9 +20,13 @@ import {
   getNativePlatform,
   isIntegrityModuleAvailable,
   resetIosKeyId,
-} from '../integrity';
-import type { IntegrityAction, PlatformName, SaveNotesRequest } from '../types';
-import type { LogEntry, LogGroup } from './types';
+} from '../../integrity';
+import type {
+  IntegrityAction,
+  PlatformName,
+  SaveNotesRequest,
+} from '../../types';
+import type { LogEntry, LogGroup } from '../model/types';
 
 const inputStorageKey = 'integrity-demo-mobile-inputs';
 

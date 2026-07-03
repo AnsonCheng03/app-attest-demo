@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { useAppContext } from './AppContext';
-import { styles } from './styles';
+import { useAppContext } from '../context/AppContext';
+import { styles } from '../theme/styles';
 
 export function RuntimeSummary() {
   const {

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { useAppContext } from './AppContext';
+import { useAppContext } from '../context/AppContext';
 import { ActionButton } from './ActionButton';
-import { styles } from './styles';
+import { styles } from '../theme/styles';
 
 export function ActionList() {
   const { actions, nativePlatform } = useAppContext();

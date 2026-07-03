@@ -1,14 +1,14 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppContext } from './AppContext';
-import { styles } from './styles';
+import { useAppContext } from '../context/AppContext';
+import { styles } from '../theme/styles';
 
 export function BlockedRuntimeScreen() {
   const { apiBaseUrl } = useAppContext();
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.blockedScreen}>
         <View style={[styles.card, styles.blockedCard, styles.statusFallback]}>
           <Text style={styles.cardEyebrow}>Runtime Blocked</Text>

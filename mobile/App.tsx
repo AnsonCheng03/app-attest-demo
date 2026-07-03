@@ -13,7 +13,7 @@ function AppRoot() {
   if (app.nativeRuntimeRequiredButMissing) {
     return (
       <>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <BlockedRuntimeScreen />
       </>
     );
@@ -21,7 +21,7 @@ function AppRoot() {
 
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <AppScreen />
     </>
   );
