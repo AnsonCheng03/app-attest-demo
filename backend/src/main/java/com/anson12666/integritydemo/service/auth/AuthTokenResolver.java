@@ -1,6 +1,7 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.auth;
 
 import com.anson12666.integritydemo.model.AuthenticatedUser;
+import com.anson12666.integritydemo.service.support.LogSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

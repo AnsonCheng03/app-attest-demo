@@ -1,4 +1,4 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.integrity;
 
 import com.anson12666.integritydemo.integrity.AppIntegrityVerifier;
 import com.anson12666.integritydemo.integrity.IntegrityVerificationRequest;
@@ -7,6 +7,8 @@ import com.anson12666.integritydemo.model.ChallengeRecord;
 import com.anson12666.integritydemo.model.IntegrityAction;
 import com.anson12666.integritydemo.model.Platform;
 import com.anson12666.integritydemo.repository.ChallengeRepository;
+import com.anson12666.integritydemo.service.support.HashingService;
+import com.anson12666.integritydemo.service.support.LogSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.challenge;
 
 import com.anson12666.integritydemo.dto.ChallengeResponse;
 import com.anson12666.integritydemo.model.ChallengeRecord;

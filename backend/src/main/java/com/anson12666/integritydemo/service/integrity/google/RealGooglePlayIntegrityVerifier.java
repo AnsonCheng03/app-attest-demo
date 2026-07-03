@@ -1,9 +1,10 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.integrity.google;
 
 import com.anson12666.integritydemo.config.AppIntegrityProperties;
 import com.anson12666.integritydemo.integrity.AppIntegrityVerifier;
 import com.anson12666.integritydemo.integrity.IntegrityVerificationRequest;
 import com.anson12666.integritydemo.integrity.IntegrityVerificationResult;
+import com.anson12666.integritydemo.service.support.LogSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

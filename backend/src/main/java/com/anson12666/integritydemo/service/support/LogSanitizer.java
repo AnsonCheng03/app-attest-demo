@@ -1,4 +1,4 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.support;
 
 import org.springframework.stereotype.Component;
 

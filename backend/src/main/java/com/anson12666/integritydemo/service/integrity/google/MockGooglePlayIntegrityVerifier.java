@@ -1,4 +1,4 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.integrity.google;
 
 import com.anson12666.integritydemo.config.AppIntegrityProperties;
 import com.anson12666.integritydemo.integrity.AppIntegrityVerifier;

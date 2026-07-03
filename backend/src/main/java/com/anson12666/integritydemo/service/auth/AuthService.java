@@ -1,4 +1,4 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.auth;
 
 import com.anson12666.integritydemo.model.AuthenticatedUser;
 import org.slf4j.Logger;

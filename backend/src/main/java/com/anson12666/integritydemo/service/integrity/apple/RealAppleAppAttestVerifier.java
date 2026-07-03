@@ -1,4 +1,4 @@
-package com.anson12666.integritydemo.service;
+package com.anson12666.integritydemo.service.integrity.apple;
 
 import com.anson12666.integritydemo.config.AppIntegrityProperties;
 import com.anson12666.integritydemo.integrity.AppIntegrityVerifier;
@@ -6,6 +6,7 @@ import com.anson12666.integritydemo.integrity.IntegrityVerificationRequest;
 import com.anson12666.integritydemo.integrity.IntegrityVerificationResult;
 import com.anson12666.integritydemo.model.IosDeviceRecord;
 import com.anson12666.integritydemo.repository.IosDeviceRepository;
+import com.anson12666.integritydemo.service.support.LogSanitizer;
 import com.webauthn4j.appattest.DeviceCheckAssertionManager;
 import com.webauthn4j.appattest.authenticator.DCAppleDevice;
 import com.webauthn4j.appattest.authenticator.DCAppleDeviceImpl;

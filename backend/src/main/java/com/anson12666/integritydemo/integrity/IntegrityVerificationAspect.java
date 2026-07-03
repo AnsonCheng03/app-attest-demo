@@ -2,9 +2,9 @@ package com.anson12666.integritydemo.integrity;
 
 import com.anson12666.integritydemo.dto.IntegrityProtectedRequest;
 import com.anson12666.integritydemo.model.AuthenticatedUser;
-import com.anson12666.integritydemo.service.AuthTokenResolver;
-import com.anson12666.integritydemo.service.IntegrityService;
-import com.anson12666.integritydemo.service.RequestPayloadHasher;
+import com.anson12666.integritydemo.service.auth.AuthTokenResolver;
+import com.anson12666.integritydemo.service.integrity.IntegrityService;
+import com.anson12666.integritydemo.service.support.RequestPayloadHasher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
