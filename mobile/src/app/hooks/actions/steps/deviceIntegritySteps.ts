@@ -5,7 +5,7 @@ import {
   ensureIosKeyId,
   resetIosKeyId,
 } from '../../../../integrity';
-import type { ChallengeResponse } from '../../../../types';
+import type { ChallengeResponse, IosRegisterResponse } from '../../../../types';
 import {
   formatLogIO,
   isRecoverableIosRegistrationError,
@@ -93,7 +93,7 @@ export async function submitIosKeyRegistration(
   challenge: ChallengeResponse,
   keyId: string,
   attestationObject: string
-) {
+): Promise<IosRegisterResponse> {
   const request = {
     challengeId: challenge.challengeId,
     challenge: challenge.challenge,

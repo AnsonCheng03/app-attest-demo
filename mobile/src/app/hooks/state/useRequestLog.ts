@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   formatErrorDetail,
   formatReportStepTitle,
@@ -11,7 +11,10 @@ export function useRequestLog() {
   const [loading, setLoading] = useState(false);
   const [requestStatus, setRequestStatus] = useState('');
 
-  const appendLogEntry = (groupId: string, entry: Omit<LogEntry, 'id'>) => {
+  const appendLogEntry = useCallback((
+    groupId: string,
+    entry: Omit<LogEntry, 'id'>
+  ) => {
     setLogGroups((current) =>
       current.map((group) =>
         group.id === groupId
@@ -25,9 +28,9 @@ export function useRequestLog() {
           : group
       )
     );
-  };
+  }, []);
 
-  const startLogGroup = (title: string, flowTitle: string) => {
+  const startLogGroup = useCallback((title: string, flowTitle: string) => {
     const groupId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const nextGroup: LogGroup = {
       id: groupId,
@@ -38,9 +41,9 @@ export function useRequestLog() {
     };
     setLogGroups((current) => [nextGroup, ...current].slice(0, 12));
     return groupId;
-  };
+  }, []);
 
-  const setLogGroupStatus = (
+  const setLogGroupStatus = useCallback((
     groupId: string,
     status: LogGroup['status']
   ) => {
@@ -49,13 +52,13 @@ export function useRequestLog() {
         group.id === groupId ? { ...group, status } : group
       )
     );
-  };
+  }, []);
 
-  const updateRequestStatus = (title: string, detail?: string) => {
+  const updateRequestStatus = useCallback((title: string, detail?: string) => {
     setRequestStatus(detail ? `${title}: ${detail}` : title);
-  };
+  }, []);
 
-  const withLoading = async (
+  const withLoading = useCallback(async (
     label: string,
     flowTitle: string,
     task: (report: ReportStep) => Promise<void>
@@ -97,7 +100,7 @@ export function useRequestLog() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [appendLogEntry, setLogGroupStatus, startLogGroup, updateRequestStatus]);
 
   return {
     loading,

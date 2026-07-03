@@ -6,6 +6,7 @@ import { queryClient } from './src/app/queryClient';
 import {
   AppProvider,
   AppScreen,
+  BootstrapLoadingScreen,
   BlockedRuntimeScreen,
   useAppContext,
 } from './src/app';
@@ -18,6 +19,15 @@ function AppRoot() {
       <>
         <StatusBar style="light" />
         <BlockedRuntimeScreen />
+      </>
+    );
+  }
+
+  if (app.bootstrapLoading) {
+    return (
+      <>
+        <StatusBar style="light" />
+        <BootstrapLoadingScreen detail={app.bootstrapStatus} />
       </>
     );
   }

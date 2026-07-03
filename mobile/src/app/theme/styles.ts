@@ -85,6 +85,15 @@ export const styles = StyleSheet.create({
   blockedCard: {
     overflow: 'hidden',
   },
+  bootstrapCard: {
+    gap: 14,
+  },
+  bootstrapSpinnerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 6,
+  },
   hero: {
     backgroundColor: 'rgba(12, 24, 41, 0.62)',
     borderRadius: 30,

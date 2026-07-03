@@ -6,4 +6,5 @@ export { RuntimeStatusCard } from './components/RuntimeStatusCard';
 export { RuntimeSummary } from './components/RuntimeSummary';
 export { ServerCard } from './components/ServerCard';
 export { AppScreen } from './screens/AppScreen';
+export { BootstrapLoadingScreen } from './screens/BootstrapLoadingScreen';
 export { BlockedRuntimeScreen } from './screens/BlockedRuntimeScreen';
