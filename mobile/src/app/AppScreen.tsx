@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionList } from './ActionList';
 import { ActivityLogCard } from './ActivityLogCard';
 import { CredentialsCard } from './CredentialsCard';
