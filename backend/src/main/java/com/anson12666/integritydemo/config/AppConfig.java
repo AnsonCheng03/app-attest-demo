@@ -1,0 +1,9 @@
+package com.anson12666.integritydemo.config;
+
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@EnableConfigurationProperties(AppIntegrityProperties.class)
+public class AppConfig {
+}
